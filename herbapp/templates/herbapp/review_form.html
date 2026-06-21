@@ -1,0 +1,97 @@
+{% extends 'herbapp/base.html' %}
+
+{% block title %}异常复核 - {{ batch.batch_no }} 第{{ round.round_no }}轮{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="{% url 'herbapp:batch_detail' batch.pk %}" class="btn btn-outline-secondary me-3">← 返回详情</a>
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">
+        🔍 异常复核 - {{ batch.batch_no }} 第{{ round.round_no }}轮
+    </h2>
+    <span class="badge bg-danger ms-3" style="font-size: 0.85rem;">⚠️ 异常待处理</span>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card mb-4 border-danger">
+            <div class="card-header bg-danger bg-opacity-10 text-danger">
+                ⚠️ 异常信息
+            </div>
+            <div class="card-body">
+                <div class="row small mb-3">
+                    <div class="col-md-4"><strong>轮次：</strong>第{{ round.round_no }}轮</div>
+                    <div class="col-md-4"><strong>记录时间：</strong>{{ round.record_time|date:"Y-m-d H:i" }}</div>
+                    <div class="col-md-4"><strong>复核状态：</strong>
+                        {% if round.review_status == 'pending' %}
+                        <span class="badge bg-warning">待复核</span>
+                        {% elif round.review_status == 'pass' %}
+                        <span class="badge bg-success">通过</span>
+                        {% else %}
+                        <span class="badge bg-danger">驳回</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row small text-muted mb-3">
+                    <div class="col-md-3"><strong>蒸制时间：</strong>{{ round.steam_time }}分钟</div>
+                    <div class="col-md-3"><strong>晾晒时长：</strong>{{ round.dry_duration }}小时</div>
+                    <div class="col-md-3"><strong>当前重量：</strong>{{ round.weight }}g</div>
+                    <div class="col-md-3"><strong>色泽评级：</strong>
+                        <span class="badge badge-color-{{ round.color_rating }}">{{ round.get_color_rating_display }}</span>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small text-danger">异常原因：</label>
+                    <div class="alert alert-danger small py-2 mb-0">
+                        <ul class="mb-0 ps-3">
+                            {% if round.abnormal_reasons %}
+                                {% for key, msg in round.abnormal_reasons.items %}
+                                <li>{{ msg }}</li>
+                                {% endfor %}
+                            {% else %}
+                                <li>数据异常（色泽评级异常）</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+                {% if round.handling_opinion %}
+                <div class="mb-0">
+                    <label class="form-label fw-semibold small">处理意见（录入人填写）：</label>
+                    <div class="alert alert-warning small py-2 mb-0">
+                        {{ round.handling_opinion }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">📋 复核处理</div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">{{ form.review_status.label }} <span class="text-danger">*</span></label>
+                        {{ form.review_status }}
+                        {{ form.review_status.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">{{ form.review_result.label }} <span class="text-danger">*</span></label>
+                        {{ form.review_result }}
+                        <div class="form-text">请详细描述复核结论、改进建议等</div>
+                        {{ form.review_result.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">{{ form.reviewer.label }} <span class="text-danger">*</span></label>
+                        {{ form.reviewer }}
+                        {{ form.reviewer.errors }}
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="{% url 'herbapp:batch_detail' batch.pk %}" class="btn btn-secondary">取消</a>
+                        <button type="submit" class="btn btn-primary">提交复核</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

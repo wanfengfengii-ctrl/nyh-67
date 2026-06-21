@@ -165,10 +165,16 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
+                        <a class="nav-link" href="{% url 'herbapp:template_list' %}">标准模板</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{% url 'herbapp:batch_list' %}">批次管理</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'herbapp:batch_create' %}">新建批次</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'herbapp:batch_compare' %}">批次对比</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/admin/" target="_blank">后台管理</a>

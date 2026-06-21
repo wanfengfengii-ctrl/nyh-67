@@ -2,12 +2,39 @@
 
 {% block title %}记录炮制轮次 - {{ batch.batch_no }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    .field-abnormal {
+        border-color: var(--vermilion) !important;
+        background-color: #fff5f5 !important;
+        box-shadow: 0 0 0 0.25rem rgba(178,34,34,0.15) !important;
+    }
+    .abnormal-tag {
+        display: inline-block;
+        padding: 2px 8px;
+        font-size: 0.75rem;
+        background: var(--vermilion);
+        color: white;
+        border-radius: 4px;
+        margin-left: 6px;
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="d-flex align-items-center mb-4">
     <a href="{% url 'herbapp:batch_detail' batch.pk %}" class="btn btn-outline-secondary me-3">← 返回详情</a>
     <h2 class="font-serif mb-0" style="color: var(--ochre);">
         📝 记录第{{ round_no }}轮炮制数据
     </h2>
+    {% if batch.template %}
+    <span class="badge bg-info ms-3" style="font-size: 0.8rem;">📐 引用模板：{{ batch.template.template_name }}</span>
+    {% endif %}
 </div>
 
 <div class="row justify-content-center">
@@ -17,50 +44,240 @@
                 批次信息参考
             </div>
             <div class="card-body">
-                <div class="row text-muted">
+                <div class="row text-muted small">
                     <div class="col-md-4"><strong>批次编号：</strong>{{ batch.batch_no }}</div>
                     <div class="col-md-4"><strong>药材名称：</strong>{{ batch.herb_name }}</div>
                     <div class="col-md-4"><strong>初始重量：</strong>{{ batch.initial_weight }}g</div>
                     <div class="col-md-4"><strong>规定轮次：</strong>共{{ batch.required_rounds }}轮</div>
                     <div class="col-md-4"><strong>当前轮次：</strong>第{{ round_no }}轮</div>
-                    <div class="col-md-4">
-                        <strong>重量上限：</strong>
-                        <span class="text-danger">≤ {{ batch.initial_weight }}g</span>
-                    </div>
+                    <div class="col-md-4"><strong>上轮重量：</strong>{{ previous_weight }}g</div>
                 </div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">炮制数据录入</div>
+        {% if standard_info %}
+        <div class="card mb-4 border-info">
+            <div class="card-header bg-info bg-opacity-10 text-info">
+                📐 本轮标准参考（第{{ standard_info.round_no }}轮）
+            </div>
+            <div class="card-body small">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <strong>蒸制时间：</strong><br>
+                        <span class="text-info">{{ standard_info.steam_time_min }} ~ {{ standard_info.steam_time_max }}分钟</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>晾晒时长：</strong><br>
+                        <span class="text-info">{{ standard_info.dry_duration_min }} ~ {{ standard_info.dry_duration_max }}小时</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>最大损耗：</strong><br>
+                        <span class="text-info">≤ {{ standard_info.weight_loss_max }}%</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>色泽要求：</strong><br>
+                        <span class="text-info">{{ standard_info.required_color_display }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card" id="mainFormCard">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>炮制数据录入</span>
+                <div id="abnormalStatusBadge" style="display:none;">
+                    <span class="abnormal-tag">⚠️ 检测到异常</span>
+                </div>
+            </div>
             <div class="card-body">
-                <form method="post" novalidate>
+                <form method="post" novalidate id="roundForm">
                     {% csrf_token %}
-                    {% for field in form %}
                     <div class="mb-3">
                         <label class="form-label fw-semibold">
-                            {{ field.label }}
-                            {% if field.name == 'handling_opinion' %}
-                            <small class="text-muted ms-2">（色泽评级异常时必填）</small>
+                            {{ form.steam_time.label }}
+                            {% if standard_info %}
+                            <small class="text-info ms-2">标准：{{ standard_info.steam_time_min }}~{{ standard_info.steam_time_max }}分钟</small>
                             {% endif %}
+                            <span class="field-error-tag" data-target="steam_time" style="display:none;"></span>
                         </label>
-                        {{ field }}
-                        {% if field.help_text %}
-                        <div class="form-text">{{ field.help_text }}</div>
-                        {% endif %}
-                        {{ field.errors }}
+                        {{ form.steam_time }}
+                        {{ form.steam_time.errors }}
                     </div>
-                    {% endfor %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            {{ form.dry_duration.label }}
+                            {% if standard_info %}
+                            <small class="text-info ms-2">标准：{{ standard_info.dry_duration_min }}~{{ standard_info.dry_duration_max }}小时</small>
+                            {% endif %}
+                            <span class="field-error-tag" data-target="dry_duration" style="display:none;"></span>
+                        </label>
+                        {{ form.dry_duration }}
+                        {{ form.dry_duration.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            {{ form.weight.label }}
+                            <small class="text-muted ms-2">≤ {{ batch.initial_weight }}g | 上轮：{{ previous_weight }}g</small>
+                            <span class="field-error-tag" data-target="weight" style="display:none;"></span>
+                        </label>
+                        {{ form.weight }}
+                        <div class="form-text">当前损耗：<span id="currentLoss">0</span>%
+                            {% if standard_info %}
+                            <span class="text-info">（标准：≤ {{ standard_info.weight_loss_max }}%）</span>
+                            {% endif %}
+                        </div>
+                        {{ form.weight.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            {{ form.color_rating.label }}
+                            {% if standard_info %}
+                            <small class="text-info ms-2">要求：{{ standard_info.required_color_display }}</small>
+                            {% endif %}
+                            <span class="field-error-tag" data-target="color_rating" style="display:none;"></span>
+                        </label>
+                        {{ form.color_rating }}
+                        {{ form.color_rating.errors }}
+                    </div>
+                    <div class="mb-3" id="handlingOpinionBlock">
+                        <label class="form-label fw-semibold">
+                            {{ form.handling_opinion.label }}
+                            <span class="text-danger" id="handlingRequiredHint" style="display:none;">（异常必填）</span>
+                        </label>
+                        {{ form.handling_opinion }}
+                        {{ form.handling_opinion.errors }}
+                    </div>
+                    <div id="abnormalSummary" class="alert alert-danger small" style="display:none;">
+                        <strong>⚠️ 异常项目：</strong>
+                        <ul id="abnormalList" class="mb-0 mt-2 ps-3"></ul>
+                    </div>
                     <div class="alert alert-info small">
-                        <strong>验证规则：</strong>蒸制时间和晾晒时长必须大于0；当前重量不能超过初始重量{{ batch.initial_weight }}g；色泽评级为"异常"时必须填写处理意见。
+                        <strong>提示：</strong>实时检测数据是否符合标准。若超出范围，相关字段将标红提示。异常数据必须填写处理意见。
                     </div>
                     <div class="d-flex justify-content-end gap-2 mt-4">
                         <a href="{% url 'herbapp:batch_detail' batch.pk %}" class="btn btn-secondary">取消</a>
-                        <button type="submit" class="btn btn-primary">保存本轮记录</button>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">保存本轮记录</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    const checkUrl = "{% url 'herbapp:round_check_abnormal' batch.pk round_no %}";
+    const initialWeight = parseFloat("{{ batch.initial_weight }}");
+    const form = document.getElementById('roundForm');
+
+    const fields = {
+        steam_time: document.querySelector('[name="steam_time"]'),
+        dry_duration: document.querySelector('[name="dry_duration"]'),
+        weight: document.querySelector('[name="weight"]'),
+        color_rating: document.querySelector('[name="color_rating"]'),
+        handling_opinion: document.querySelector('[name="handling_opinion"]'),
+    };
+
+    const currentLossSpan = document.getElementById('currentLoss');
+    const abnormalSummary = document.getElementById('abnormalSummary');
+    const abnormalList = document.getElementById('abnormalList');
+    const abnormalBadge = document.getElementById('abnormalStatusBadge');
+    const handlingBlock = document.getElementById('handlingOpinionBlock');
+    const handlingRequiredHint = document.getElementById('handlingRequiredHint');
+
+    function updateLossDisplay() {
+        const w = parseFloat(fields.weight.value) || 0;
+        if (w > 0 && initialWeight > 0) {
+            const loss = ((initialWeight - w) / initialWeight * 100).toFixed(2);
+            currentLossSpan.textContent = loss;
+        } else {
+            currentLossSpan.textContent = '0';
+        }
+    }
+
+    function setFieldAbnormal(name, isAbnormal, msg) {
+        const input = fields[name];
+        if (!input) return;
+        const tag = document.querySelector('.field-error-tag[data-target="' + name + '"]');
+        if (isAbnormal) {
+            input.classList.add('field-abnormal');
+            if (tag && msg) {
+                tag.textContent = '⚠️ ' + msg;
+                tag.className = 'abnormal-tag';
+                tag.style.display = '';
+            }
+        } else {
+            input.classList.remove('field-abnormal');
+            if (tag) {
+                tag.textContent = '';
+                tag.style.display = 'none';
+            }
+        }
+    }
+
+    async function checkAbnormal() {
+        const data = new FormData();
+        data.append('steam_time', fields.steam_time.value || 0);
+        data.append('dry_duration', fields.dry_duration.value || 0);
+        data.append('weight', fields.weight.value || 0);
+        data.append('color_rating', fields.color_rating.value || '');
+
+        try {
+            const r = await fetch(checkUrl, { method: 'POST', body: data });
+            const result = await r.json();
+            if (!result.ok) return;
+
+            Object.keys(fields).forEach(k => {
+                if (k !== 'handling_opinion') setFieldAbnormal(k, false);
+            });
+            abnormalList.innerHTML = '';
+
+            if (result.is_abnormal) {
+                abnormalBadge.style.display = '';
+                abnormalSummary.style.display = '';
+                handlingRequiredHint.style.display = '';
+                handlingBlock.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+                const reasons = result.reasons || {};
+                const fieldMap = {
+                    steam_time: '蒸制时间',
+                    dry_duration: '晾晒时长',
+                    weight_loss: '重量损耗',
+                    color: '色泽评级',
+                    color_abnormal: '色泽评级'
+                };
+
+                Object.entries(reasons).forEach(([key, msg]) => {
+                    const li = document.createElement('li');
+                    li.textContent = msg;
+                    abnormalList.appendChild(li);
+                    if (key === 'weight_loss') {
+                        setFieldAbnormal('weight', true, '损耗超标');
+                    } else if (key === 'color' || key === 'color_abnormal') {
+                        setFieldAbnormal('color_rating', true, '不达标');
+                    } else if (fieldMap[key]) {
+                        setFieldAbnormal(key, true, '超标');
+                    }
+                });
+            } else {
+                abnormalBadge.style.display = 'none';
+                abnormalSummary.style.display = 'none';
+                handlingRequiredHint.style.display = 'none';
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    ['steam_time', 'dry_duration', 'weight', 'color_rating'].forEach(k => {
+        if (fields[k]) fields[k].addEventListener('input', () => { updateLossDisplay(); checkAbnormal(); });
+        if (fields[k]) fields[k].addEventListener('change', checkAbnormal);
+    });
+
+    fields.weight && fields.weight.addEventListener('input', updateLossDisplay);
+    updateLossDisplay();
+    if (fields.steam_time.value || fields.dry_duration.value || fields.weight.value) checkAbnormal();
+})();
+</script>
 {% endblock %}

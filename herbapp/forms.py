@@ -1,20 +1,90 @@
 from django import forms
 from django.core.exceptions import ValidationError
+from django.forms import formset_factory, BaseFormSet
 
-from .models import HerbBatch, ProcessingRound, Acceptance
+from .models import (
+    HerbBatch, ProcessingRound, Acceptance,
+    ProcessingStandardTemplate, RoundStandard, BatchQualityAssessment
+)
+
+
+class ProcessingStandardTemplateForm(forms.ModelForm):
+    class Meta:
+        model = ProcessingStandardTemplate
+        fields = ['template_name', 'herb_name', 'total_rounds', 'description', 'is_active']
+        widgets = {
+            'template_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'herb_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'total_rounds': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def clean_total_rounds(self):
+        total_rounds = self.cleaned_data.get('total_rounds')
+        if total_rounds is not None and total_rounds < 1:
+            raise forms.ValidationError('总轮次必须大于等于1')
+        return total_rounds
+
+
+class RoundStandardForm(forms.ModelForm):
+    class Meta:
+        model = RoundStandard
+        fields = ['round_no', 'steam_time_min', 'steam_time_max', 'dry_duration_min',
+                  'dry_duration_max', 'weight_loss_max', 'required_color']
+        widgets = {
+            'round_no': forms.NumberInput(attrs={'class': 'form-control round-no-input', 'min': '1'}),
+            'steam_time_min': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'min': '0.1'}),
+            'steam_time_max': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'min': '0.1'}),
+            'dry_duration_min': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'min': '0.1'}),
+            'dry_duration_max': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'min': '0.1'}),
+            'weight_loss_max': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'max': '100'}),
+            'required_color': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+
+class BaseRoundStandardFormSet(BaseFormSet):
+    def clean(self):
+        if any(self.errors):
+            return
+        round_nos = set()
+        for form in self.forms:
+            if not form.cleaned_data:
+                continue
+            if form.cleaned_data.get('DELETE'):
+                continue
+            round_no = form.cleaned_data.get('round_no')
+            if round_no in round_nos:
+                raise ValidationError(f'轮次序号{round_no}重复，请检查')
+            round_nos.add(round_no)
+
+
+RoundStandardFormSet = formset_factory(
+    RoundStandardForm,
+    formset=BaseRoundStandardFormSet,
+    extra=1,
+    can_delete=True
+)
 
 
 class HerbBatchForm(forms.ModelForm):
     class Meta:
         model = HerbBatch
-        fields = ['batch_no', 'herb_name', 'initial_weight', 'required_rounds', 'remark']
+        fields = ['batch_no', 'herb_name', 'template', 'initial_weight', 'required_rounds', 'remark']
         widgets = {
             'batch_no': forms.TextInput(attrs={'class': 'form-control'}),
             'herb_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'template': forms.Select(attrs={'class': 'form-select', 'id': 'id_template'}),
             'initial_weight': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
-            'required_rounds': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+            'required_rounds': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'id': 'id_required_rounds'}),
             'remark': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['template'].required = False
+        self.fields['template'].queryset = ProcessingStandardTemplate.objects.filter(is_active=True)
+        self.fields['template'].empty_label = '—— 不使用模板（手动配置） ——'
 
     def clean_initial_weight(self):
         initial_weight = self.cleaned_data.get('initial_weight')
@@ -34,11 +104,30 @@ class ProcessingRoundForm(forms.ModelForm):
         model = ProcessingRound
         fields = ['steam_time', 'dry_duration', 'weight', 'color_rating', 'handling_opinion']
         widgets = {
-            'steam_time': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'min': '0.1'}),
-            'dry_duration': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'min': '0.1'}),
-            'weight': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
-            'color_rating': forms.Select(attrs={'class': 'form-select'}),
-            'handling_opinion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'steam_time': forms.NumberInput(attrs={
+                'class': 'form-control steam-time-input',
+                'step': '0.1', 'min': '0.1',
+                'data-field': 'steam_time'
+            }),
+            'dry_duration': forms.NumberInput(attrs={
+                'class': 'form-control dry-duration-input',
+                'step': '0.1', 'min': '0.1',
+                'data-field': 'dry_duration'
+            }),
+            'weight': forms.NumberInput(attrs={
+                'class': 'form-control weight-input',
+                'step': '0.01', 'min': '0.01',
+                'data-field': 'weight'
+            }),
+            'color_rating': forms.Select(attrs={
+                'class': 'form-select color-rating-input',
+                'data-field': 'color_rating'
+            }),
+            'handling_opinion': forms.Textarea(attrs={
+                'class': 'form-control handling-opinion-input',
+                'rows': 3,
+                'placeholder': '若数据超出标准范围，必须填写处理意见...'
+            }),
         }
 
     def __init__(self, *args, batch=None, **kwargs):
@@ -67,10 +156,18 @@ class ProcessingRoundForm(forms.ModelForm):
             elif self.batch and weight > self.batch.initial_weight:
                 self.add_error('weight', '当前重量不能大于初始重量')
 
-        if color_rating == ProcessingRound.COLOR_ABNORMAL and not handling_opinion:
-            self.add_error('handling_opinion', '色泽评级异常时必须填写处理意见')
-
         return cleaned_data
+
+
+class RoundReviewForm(forms.ModelForm):
+    class Meta:
+        model = ProcessingRound
+        fields = ['review_status', 'review_result', 'reviewer']
+        widgets = {
+            'review_status': forms.Select(attrs={'class': 'form-select'}),
+            'review_result': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'reviewer': forms.TextInput(attrs={'class': 'form-control'}),
+        }
 
 
 class AcceptanceForm(forms.ModelForm):
@@ -81,3 +178,39 @@ class AcceptanceForm(forms.ModelForm):
             'result': forms.Select(attrs={'class': 'form-select'}),
             'remark': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
         }
+
+
+class QualityAssessmentForm(forms.ModelForm):
+    class Meta:
+        model = BatchQualityAssessment
+        fields = ['evaluator', 'evaluation_remark']
+        widgets = {
+            'evaluator': forms.TextInput(attrs={'class': 'form-control'}),
+            'evaluation_remark': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+
+class BatchCompareForm(forms.Form):
+    batches = forms.ModelMultipleChoiceField(
+        queryset=HerbBatch.objects.none(),
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
+        label='选择对比批次（2-5个）',
+        required=True
+    )
+
+    def __init__(self, *args, **kwargs):
+        herb_name = kwargs.pop('herb_name', None)
+        super().__init__(*args, **kwargs)
+        qs = HerbBatch.objects.all()
+        if herb_name:
+            qs = qs.filter(herb_name__icontains=herb_name)
+        self.fields['batches'].queryset = qs.order_by('-created_at')
+
+    def clean_batches(self):
+        batches = self.cleaned_data.get('batches')
+        if batches:
+            if len(batches) < 2:
+                raise ValidationError('至少选择2个批次进行对比')
+            if len(batches) > 5:
+                raise ValidationError('最多选择5个批次进行对比')
+        return batches

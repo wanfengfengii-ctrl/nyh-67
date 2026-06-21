@@ -1,0 +1,105 @@
+{% extends 'herbapp/base.html' %}
+
+{% block title %}{{ template.template_name }} - 模板详情{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="{% url 'herbapp:template_list' %}" class="btn btn-outline-secondary me-3">← 返回列表</a>
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">
+        📐 {{ template.template_name }}
+    </h2>
+    <span class="badge ms-3 {% if template.is_active %}bg-success{% else %}bg-secondary{% endif %}" style="font-size: 0.9rem;">
+        {% if template.is_active %}启用中{% else %}已停用{% endif %}
+    </span>
+    <div class="ms-auto d-flex gap-2">
+        <a href="{% url 'herbapp:template_edit' template.pk %}" class="btn btn-warning">编辑</a>
+        <a href="{% url 'herbapp:template_delete' template.pk %}" class="btn btn-danger">删除</a>
+    </div>
+</div>
+
+<div class="row mb-4 g-3">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ template.herb_name }}</div>
+            <div class="stat-label">适用药材</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ template.total_rounds }}</div>
+            <div class="stat-label">总轮次数</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ round_standards|length }}</div>
+            <div class="stat-label">已配置规则</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ batch_count }}</div>
+            <div class="stat-label">引用批次</div>
+        </div>
+    </div>
+</div>
+
+{% if template.description %}
+<div class="card mb-4">
+    <div class="card-header">📝 模板说明</div>
+    <div class="card-body">
+        <p class="mb-0">{{ template.description }}</p>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">🔢 轮次标准详细配置</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>轮次</th>
+                        <th>蒸制时间范围(分钟)</th>
+                        <th>晾晒时长范围(小时)</th>
+                        <th>最大允许损耗(%)</th>
+                        <th>色泽要求</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rs in round_standards %}
+                    <tr>
+                        <td class="font-serif"><strong>第{{ rs.round_no }}轮</strong></td>
+                        <td>
+                            <span class="badge bg-info">{{ rs.steam_time_min }} ~ {{ rs.steam_time_max }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary">{{ rs.dry_duration_min }} ~ {{ rs.dry_duration_max }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-warning text-dark">≤ {{ rs.weight_loss_max }}%</span>
+                        </td>
+                        <td>
+                            {% if rs.required_color == 'excellent' %}
+                            <span class="badge badge-color-excellent">优</span>
+                            {% elif rs.required_color == 'good' %}
+                            <span class="badge badge-color-good">良以上</span>
+                            {% else %}
+                            <span class="badge badge-color-normal">中以上</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">
+                            暂无轮次标准配置，请编辑模板添加轮次规则
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -3,12 +3,20 @@
 {% block title %}{{ batch.batch_no }} - 批次详情{% endblock %}
 
 {% block content %}
-<div class="d-flex align-items-center mb-4">
-    <a href="{% url 'herbapp:batch_list' %}" class="btn btn-outline-secondary me-3">← 返回列表</a>
+<div class="d-flex align-items-center mb-4 flex-wrap gap-2">
+    <a href="{% url 'herbapp:batch_list' %}" class="btn btn-outline-secondary me-2">← 返回列表</a>
     <h2 class="font-serif mb-0" style="color: var(--ochre);">
         🌿 {{ batch.batch_no }} - {{ batch.herb_name }}
     </h2>
-    <span class="badge badge-status-{{ batch.status }} ms-3" style="font-size: 0.9rem;">{{ batch.get_status_display }}</span>
+    <span class="badge badge-status-{{ batch.status }} ms-2" style="font-size: 0.9rem;">{{ batch.get_status_display }}</span>
+    {% if batch.template %}
+    <span class="badge bg-info ms-2" style="font-size: 0.8rem;">📐 {{ batch.template.template_name }}</span>
+    {% endif %}
+    {% if pending_review_count > 0 %}
+    <span class="badge bg-danger ms-2" style="font-size: 0.8rem; animation: pulse 2s infinite;">
+        ⚠️ {{ pending_review_count }}个异常待复核
+    </span>
+    {% endif %}
 </div>
 
 <div class="row mb-4">
@@ -38,6 +46,82 @@
     </div>
 </div>
 
+{% if quality_assessment %}
+<div class="card mb-4 border-success">
+    <div class="card-header bg-success bg-opacity-10 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span class="text-success">🏆 批次质量总评</span>
+        <div>
+            <span class="badge bg-success fs-6 me-2">
+                {{ quality_assessment.get_overall_grade_display }} · {{ quality_assessment.final_score }}分
+            </span>
+            <small class="text-muted">{{ quality_assessment.created_at|date:"Y-m-d H:i" }}</small>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-2">
+                <div class="text-center">
+                    <div style="font-size:2rem; font-weight:700; color: var(--herb-green);">{{ quality_assessment.final_score }}</div>
+                    <div class="small text-muted">最终评分/100</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stat-card">
+                    <div class="stat-value" style="font-size:1.2rem;">{{ quality_assessment.total_weight_loss_percent }}%</div>
+                    <div class="stat-label">总重量损耗</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stat-card">
+                    <div class="stat-value" style="font-size:1.2rem;">{{ quality_assessment.avg_color_score }}</div>
+                    <div class="stat-label">平均色泽分</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stat-card">
+                    <div class="stat-value" style="font-size:1.2rem; {% if quality_assessment.abnormal_count > 0 %}color:var(--vermilion);{% endif %}">{{ quality_assessment.abnormal_count }}</div>
+                    <div class="stat-label">异常次数</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stat-card">
+                    <div class="stat-value" style="font-size:1.2rem;">{{ quality_assessment.steam_time_deviation }}%</div>
+                    <div class="stat-label">蒸制偏差率</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stat-card">
+                    <div class="stat-value" style="font-size:1.2rem;">{{ quality_assessment.dry_duration_deviation }}%</div>
+                    <div class="stat-label">晾晒偏差率</div>
+                </div>
+            </div>
+        </div>
+        {% if quality_assessment.abnormal_count > 0 and quality_assessment.abnormal_details %}
+        <div class="mt-3">
+            <details>
+                <summary class="text-muted small fw-semibold">📋 查看异常详情</summary>
+                <div class="mt-2 p-3 bg-light rounded small">
+                    {% for ad in quality_assessment.abnormal_details %}
+                    <div class="mb-2 {% if not forloop.last %}pb-2 border-bottom{% endif %}">
+                        <strong>第{{ ad.round_no }}轮：</strong>
+                        {% for reason in ad.reasons %}<span class="text-danger me-2">{{ reason }}</span>{% endfor %}
+                        {% if ad.handling_opinion %}<br><span class="text-muted">处理：{{ ad.handling_opinion }}</span>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </details>
+        </div>
+        {% endif %}
+        {% if quality_assessment.evaluation_remark %}
+        <div class="mt-3 p-3 bg-light rounded small">
+            <strong>评估备注：</strong>{{ quality_assessment.evaluation_remark }}
+            {% if quality_assessment.evaluator %}<span class="text-muted ms-3">— {{ quality_assessment.evaluator }}</span>{% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
 <div class="row g-4 mb-4">
     <div class="col-lg-6">
         <div class="card h-100">
@@ -62,7 +146,7 @@
 </div>
 
 <div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span>📜 炮制轮次记录</span>
         <div>
             {% if can_add_round %}
@@ -70,7 +154,13 @@
             {% elif can_accept %}
             <a href="{% url 'herbapp:acceptance' batch.pk %}" class="btn btn-primary btn-sm">✓ 提交验收</a>
             {% elif has_accepted %}
-            <span class="badge bg-success fs-6">已完成验收</span>
+            <span class="badge bg-success fs-6 me-2">已完成验收</span>
+            {% endif %}
+            {% if rounds and not quality_assessment %}
+            <form method="post" action="{% url 'herbapp:batch_assessment' batch.pk %}" class="d-inline ms-1">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-success">📊 生成质量总评</button>
+            </form>
             {% endif %}
         </div>
     </div>
@@ -80,15 +170,26 @@
             {% for round in rounds %}
             <div class="col-md-6">
                 <div class="timeline-round py-2">
-                    <div class="card border-0 bg-light">
+                    <div class="card {% if round.is_abnormal %}border-danger{% else %}border-0 bg-light{% endif %}">
                         <div class="card-body py-3">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="font-serif mb-0" style="color: var(--ochre);">
-                                    第{{ round.round_no }}轮
+                            <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-1">
+                                <h6 class="font-serif mb-0" style="color: {% if round.is_abnormal %}var(--vermilion){% else %}var(--ochre){% endif %};">
+                                    {% if round.is_abnormal %}⚠️ {% endif %}第{{ round.round_no }}轮
                                 </h6>
-                                <span class="badge badge-color-{{ round.color_rating }}">{{ round.get_color_rating_display }}</span>
+                                <div class="d-flex gap-1 align-items-center flex-wrap">
+                                    <span class="badge badge-color-{{ round.color_rating }}">{{ round.get_color_rating_display }}</span>
+                                    {% if round.is_abnormal %}
+                                        {% if round.review_status == 'pending' %}
+                                        <a href="{% url 'herbapp:round_review' batch.pk round.round_no %}" class="badge bg-danger text-decoration-none">待复核</a>
+                                        {% elif round.review_status == 'pass' %}
+                                        <span class="badge bg-success">复核通过</span>
+                                        {% else %}
+                                        <span class="badge bg-warning text-dark">复核驳回</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
                             </div>
-                            <div class="row small text-muted g-2">
+                            <div class="row small g-2 {% if round.is_abnormal %}text-danger{% else %}text-muted{% endif %}">
                                 <div class="col-6">
                                     <strong>蒸制：</strong>{{ round.steam_time }}分钟
                                 </div>
@@ -99,16 +200,34 @@
                                     <strong>当前重量：</strong>{{ round.weight }}g
                                 </div>
                                 <div class="col-6">
-                                    <strong>记录时间：</strong>{{ round.record_time|date:"m-d H:i" }}
+                                    <strong>损耗：</strong>{{ round.get_weight_loss_percent }}%
                                 </div>
-                                {% if round.handling_opinion %}
-                                <div class="col-12 mt-2">
-                                    <div class="alert alert-warning py-2 px-3 mb-0 small">
-                                        <strong>处理意见：</strong>{{ round.handling_opinion }}
-                                    </div>
+                                <div class="col-12">
+                                    <strong>记录：</strong>{{ round.record_time|date:"m-d H:i" }}
+                                    {% if round.reviewer %}<span class="ms-2">复核人：{{ round.reviewer }}</span>{% endif %}
                                 </div>
-                                {% endif %}
                             </div>
+                            {% if round.is_abnormal and round.abnormal_reasons %}
+                            <div class="mt-2 p-2 bg-danger bg-opacity-10 rounded small">
+                                <strong class="text-danger">异常：</strong>
+                                <ul class="mb-0 text-danger ps-3 mt-1">
+                                    {% for k, v in round.abnormal_reasons.items %}
+                                    <li>{{ v }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                            {% if round.handling_opinion %}
+                            <div class="alert alert-warning py-2 px-3 mb-0 small mt-2">
+                                <strong>处理意见：</strong>{{ round.handling_opinion }}
+                            </div>
+                            {% endif %}
+                            {% if round.review_result %}
+                            <div class="alert {% if round.review_status == 'pass' %}alert-success{% else %}alert-secondary{% endif %} py-2 px-3 mb-0 small mt-2">
+                                <strong>复核结论：</strong>{{ round.review_result }}
+                                {% if round.reviewer %}<span class="text-muted ms-2">（{{ round.reviewer }}）</span>{% endif %}
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -125,6 +244,18 @@
         {% endif %}
     </div>
 </div>
+
+{% if batch.template %}
+<div class="card mb-4 border-info">
+    <div class="card-header bg-info bg-opacity-10 text-info d-flex justify-content-between align-items-center">
+        <span>📐 引用标准模板：{{ batch.template.template_name }}</span>
+        <a href="{% url 'herbapp:template_detail' batch.template.pk %}" class="small text-info">查看模板详情 →</a>
+    </div>
+    <div class="card-body">
+        <div class="small text-muted">{{ batch.template.description|default:"（无说明）" }}</div>
+    </div>
+</div>
+{% endif %}
 
 {% if batch.remark %}
 <div class="card mb-4">
@@ -169,20 +300,28 @@
         .then(r => r.json())
         .then(data => {
             const weightCtx = document.getElementById('weightChart').getContext('2d');
+            const datasets = [{
+                label: '重量(g)',
+                data: data.weight_data,
+                borderColor: '#8B4513',
+                backgroundColor: 'rgba(139,69,19,0.1)',
+                fill: true,
+                tension: 0.3,
+                pointBackgroundColor: '#8B4513',
+                pointRadius: 5,
+            }];
+            if (data.abnormal_flags) {
+                data.abnormal_flags.forEach((f, i) => {
+                    if (f.is_abnormal) {
+                        datasets[0].pointRadius = datasets[0].pointRadius || 5;
+                    }
+                });
+            }
             new Chart(weightCtx, {
                 type: 'line',
                 data: {
                     labels: data.labels,
-                    datasets: [{
-                        label: '重量(g)',
-                        data: data.weight_data,
-                        borderColor: '#8B4513',
-                        backgroundColor: 'rgba(139,69,19,0.1)',
-                        fill: true,
-                        tension: 0.3,
-                        pointBackgroundColor: '#8B4513',
-                        pointRadius: 5,
-                    }]
+                    datasets: datasets
                 },
                 options: {
                     responsive: true,
@@ -203,7 +342,7 @@
                     datasets: [{
                         label: '色泽评级',
                         data: data.color_data.map(d => d.value),
-                        backgroundColor: data.color_data.map(d => d.abnormal ? '#B22222' : '#2E8B57'),
+                        backgroundColor: data.color_data.map(d => d.abnormal ? '#B22222' : (d.value === 4 ? '#2E8B57' : d.value === 3 ? '#4682B4' : '#B8860B')),
                     }]
                 },
                 options: {

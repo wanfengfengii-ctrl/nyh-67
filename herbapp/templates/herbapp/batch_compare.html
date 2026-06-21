@@ -1,0 +1,359 @@
+{% extends 'herbapp/base.html' %}
+
+{% block title %}多批次对比分析 - 传统药材炮制管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">📊 多批次对比分析</h2>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">🔍 选择对比批次（支持2-5个批次同时对比）</div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            {% if form.batches.errors %}
+            <div class="alert alert-danger small mb-3">
+                {% for error in form.batches.errors %}{{ error }}{% endfor %}
+            </div>
+            {% endif %}
+            <div class="row">
+                {% for choice in form.batches.field.choices %}
+                {% if choice.0 %}
+                <div class="col-md-4 col-lg-3 mb-2">
+                    <div class="form-check border rounded p-2 h-100 {% if choice.0 in form.batches.value or choice.0 in request.POST.getlist 'batches' %}bg-light{% endif %}">
+                        <input class="form-check-input me-1" type="checkbox" name="batches" value="{{ choice.0 }}" id="batch_{{ choice.0 }}">
+                        <label class="form-check-label small fw-semibold" for="batch_{{ choice.0 }}">
+                            {{ choice.1 }}
+                        </label>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            <div class="d-flex justify-content-end mt-3">
+                <button type="submit" class="btn btn-primary">📊 开始对比分析</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if results %}
+<div class="card mb-4 border-primary">
+    <div class="card-header bg-primary bg-opacity-10 text-primary">
+        📈 对比总览 <small class="ms-2">共对比 {{ results.summary.count }} 个批次</small>
+    </div>
+    <div class="card-body">
+        {% if results.summary %}
+        <div class="row g-3 mb-3">
+            <div class="col-md-3">
+                <div class="stat-card border-success border">
+                    <div class="stat-value" style="color: var(--herb-green); font-size: 1.4rem;">{{ results.summary.best }}</div>
+                    <div class="stat-label">最佳批次 · {{ results.summary.best_score }}分</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card border-danger border">
+                    <div class="stat-value" style="color: var(--vermilion); font-size: 1.4rem;">{{ results.summary.worst }}</div>
+                    <div class="stat-label">待提升批次 · {{ results.summary.worst_score }}分</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-value" style="font-size: 1.4rem;">{{ results.summary.avg_score }}</div>
+                    <div class="stat-label">平均评分</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-value" style="font-size: 1.4rem;">{{ results.summary.total_abnormal }}</div>
+                    <div class="stat-label">累计异常次数 · 平均损耗{{ results.summary.avg_loss }}%</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle small">
+                <thead>
+                    <tr>
+                        <th>指标</th>
+                        {% for item in results.items %}
+                        <th class="text-center">
+                            <span class="d-inline-block border-start border-3 ps-2" style="border-color: {{ results.chart_data.batches|slice:forloop.counter|last|dictsortreversed:'color'|first|default:'#8B4513' }};">
+                                <strong>{{ item.batch.batch_no }}</strong>
+                            </span>
+                            <br>
+                            <small class="text-muted">{{ item.batch.herb_name }}</small>
+                            {% if item.assessment %}
+                            <br>
+                            <span class="badge {% if item.assessment.overall_grade == 'excellent' %}bg-success{% elif item.assessment.overall_grade == 'good' %}bg-primary{% elif item.assessment.overall_grade == 'normal' %}bg-secondary{% else %}bg-danger{% endif %} mt-1">
+                                {{ item.assessment.final_score }}分
+                            </span>
+                            {% endif %}
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="fw-semibold">综合评级</td>
+                        {% for item in results.items %}
+                        <td class="text-center">
+                            {% if item.assessment %}
+                                {% if item.assessment.overall_grade == 'excellent' %}<span class="badge bg-success fs-6">优秀</span>
+                                {% elif item.assessment.overall_grade == 'good' %}<span class="badge bg-primary fs-6">良好</span>
+                                {% elif item.assessment.overall_grade == 'normal' %}<span class="badge bg-secondary fs-6">合格</span>
+                                {% else %}<span class="badge bg-danger fs-6">不合格</span>{% endif %}
+                            {% else %}
+                            <span class="text-muted">未评估</span>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">最终评分</td>
+                        {% for item in results.items %}
+                        <td class="text-center">
+                            {% if item.assessment %}
+                            <strong>{{ item.assessment.final_score }}</strong>/100
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">已完成轮次</td>
+                        {% for item in results.items %}
+                        <td class="text-center">{{ item.rounds_count }}/{{ item.batch.required_rounds }}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">初始重量</td>
+                        {% for item in results.items %}
+                        <td class="text-center">{{ item.batch.initial_weight }}g</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">最终重量</td>
+                        {% for item in results.items %}
+                        <td class="text-center">{{ item.final_weight }}g</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">重量损耗率</td>
+                        {% for item in results.items %}
+                        <td class="text-center {% if item.total_loss > 20 %}text-danger{% elif item.total_loss > 15 %}text-warning{% endif %}">
+                            <strong>{{ item.total_loss }}%</strong>
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">平均色泽分</td>
+                        {% for item in results.items %}
+                        <td class="text-center">
+                            {% if item.assessment %}{{ item.assessment.avg_color_score }}{% else %}-{% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">异常次数</td>
+                        {% for item in results.items %}
+                        <td class="text-center">
+                            <span class="badge {% if item.abnormal_count > 0 %}bg-danger{% else %}bg-success{% endif %}">
+                                {{ item.abnormal_count }}次
+                            </span>
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">蒸制时间偏差</td>
+                        {% for item in results.items %}
+                        <td class="text-center">
+                            {% if item.assessment %}{{ item.assessment.steam_time_deviation }}%{% else %}-{% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">晾晒时长偏差</td>
+                        {% for item in results.items %}
+                        <td class="text-center">
+                            {% if item.assessment %}{{ item.assessment.dry_duration_deviation }}%{% else %}-{% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">⚖️ 重量变化对比</div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="weightCompareChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">📉 损耗率变化对比</div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="lossCompareChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">🏆 评分与异常对比</div>
+    <div class="card-body">
+        <div class="chart-container" style="height: 260px;">
+            <canvas id="scoreChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">📝 批次详情跳转</div>
+    <div class="card-body">
+        <div class="d-flex flex-wrap gap-2">
+            {% for item in results.items %}
+            <a href="{% url 'herbapp:batch_detail' item.batch.pk %}" class="btn btn-sm btn-outline-primary">
+                🔗 查看 {{ item.batch.batch_no }} 详情
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if results %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+    const chartData = {{ results.chart_data|safe }};
+
+    const datasets = chartData.batches.map(b => ({
+        label: b.name + (b.score !== null ? ' (' + b.score + '分)' : ''),
+        borderColor: b.color,
+        backgroundColor: b.color + '20',
+        pointBackgroundColor: b.color,
+        pointRadius: 4,
+        tension: 0.25,
+        borderWidth: 2,
+    }));
+
+    const wDatasets = chartData.batches.map((b, i) => ({
+        ...datasets[i],
+        data: b.weight,
+        fill: false,
+    }));
+
+    new Chart(document.getElementById('weightCompareChart'), {
+        type: 'line',
+        data: { labels: chartData.labels, datasets: wDatasets },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12 } },
+            },
+            scales: {
+                y: { beginAtZero: false, title: { display: true, text: '重量(g)' } },
+                x: { title: { display: true, text: '阶段' } }
+            }
+        }
+    });
+
+    const lDatasets = chartData.batches.map((b, i) => ({
+        ...datasets[i],
+        data: b.loss,
+        fill: false,
+    }));
+
+    new Chart(document.getElementById('lossCompareChart'), {
+        type: 'line',
+        data: { labels: chartData.loss_labels, datasets: lDatasets },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12 } },
+            },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: '损耗率(%)' } },
+                x: { title: { display: true, text: '阶段' } }
+            }
+        }
+    });
+
+    const scores = chartData.batches.map(b => b.score);
+    const abnormals = chartData.batches.map(b => b.abnormal_count);
+    const colors = chartData.batches.map(b => b.color);
+    const labels = chartData.batches.map(b => b.name);
+
+    new Chart(document.getElementById('scoreChart'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    type: 'bar',
+                    label: '最终评分(×1)',
+                    data: scores,
+                    backgroundColor: colors.map(c => c + 'CC'),
+                    borderColor: colors,
+                    borderWidth: 1,
+                    yAxisID: 'y',
+                    order: 2,
+                },
+                {
+                    type: 'line',
+                    label: '异常次数(×20)',
+                    data: abnormals.map(x => x * 20),
+                    borderColor: '#B22222',
+                    backgroundColor: '#B2222220',
+                    fill: true,
+                    tension: 0.3,
+                    pointBackgroundColor: '#B22222',
+                    yAxisID: 'y',
+                    order: 1,
+                }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12 } },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            if (ctx.dataset.label.includes('异常')) {
+                                return '异常次数: ' + (ctx.parsed.y / 20) + '次';
+                            }
+                            return ctx.dataset.label.replace('(×1)', '') + ': ' + ctx.parsed.y + '分';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: { display: true, text: '评分 / 异常(×20)' }
+                },
+                x: { title: { display: true, text: '批次' } }
+            }
+        }
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

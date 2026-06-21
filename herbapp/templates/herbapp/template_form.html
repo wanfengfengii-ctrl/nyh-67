@@ -1,0 +1,218 @@
+{% extends 'herbapp/base.html' %}
+
+{% block title %}{% if is_edit %}编辑模板{% else %}新建模板{% endif %} - 传统药材炮制管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="{% url 'herbapp:template_list' %}" class="btn btn-outline-secondary me-3">← 返回列表</a>
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">
+        {% if is_edit %}✏️ 编辑标准模板{% else %}➕ 新建标准模板{% endif %}
+    </h2>
+</div>
+
+{% if form.non_field_errors %}
+<div class="alert alert-danger">
+    {% for error in form.non_field_errors %}
+    <p class="mb-0">{{ error }}</p>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card mb-4">
+    <div class="card-header">📋 基本信息</div>
+    <div class="card-body">
+        <form method="post" id="templateForm">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">模板名称 <span class="text-danger">*</span></label>
+                    {{ form.template_name }}
+                    {{ form.template_name.errors }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">适用药材 <span class="text-danger">*</span></label>
+                    {{ form.herb_name }}
+                    {{ form.herb_name.errors }}
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">总轮次 <span class="text-danger">*</span></label>
+                    {{ form.total_rounds }}
+                    {{ form.total_rounds.errors }}
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <div class="form-check">
+                        {{ form.is_active }}
+                        <label class="form-check-label" for="id_is_active">启用该模板</label>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">模板说明</label>
+                    {{ form.description }}
+                    {{ form.description.errors }}
+                </div>
+            </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>🔢 轮次标准配置</span>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="addRoundBtn">+ 添加轮次规则</button>
+    </div>
+    <div class="card-body">
+            {{ formset.management_form }}
+            <div id="roundFormSetContainer">
+                {% for form in formset %}
+                <div class="round-form-item border rounded p-3 mb-3 {% if forloop.last %}empty-template{% else %}existing-template{% endif %}" {% if forloop.last %}style="display:none;"{% endif %}>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="font-serif mb-0 round-item-title" style="color: var(--ochre);">
+                            第 <span class="round-no-display">{{ form.round_no.value|default:'-' }}</span> 轮
+                        </h6>
+                        <div class="d-flex gap-2 align-items-center">
+                            {% if form.instance.pk %}
+                            <div class="form-check small">
+                                <input type="checkbox" name="{{ form.prefix }}-DELETE" class="form-check-input delete-checkbox" id="id_{{ form.prefix }}-DELETE">
+                                <label class="form-check-label text-danger small" for="id_{{ form.prefix }}-DELETE">删除</label>
+                            </div>
+                            {% else %}
+                            <button type="button" class="btn btn-sm btn-danger remove-round-btn">删除</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        {% for field in form.hidden_fields %}{{ field }}{% endfor %}
+                        <div class="col-md-2">
+                            <label class="form-label">轮次序号*</label>
+                            {{ form.round_no }}
+                            {{ form.round_no.errors }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">蒸制时间下限(分)*</label>
+                            {{ form.steam_time_min }}
+                            {{ form.steam_time_min.errors }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">蒸制时间上限(分)*</label>
+                            {{ form.steam_time_max }}
+                            {{ form.steam_time_max.errors }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">晾晒时长下限(时)*</label>
+                            {{ form.dry_duration_min }}
+                            {{ form.dry_duration_min.errors }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">晾晒时长上限(时)*</label>
+                            {{ form.dry_duration_max }}
+                            {{ form.dry_duration_max.errors }}
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label">最大损耗%</label>
+                            {{ form.weight_loss_max }}
+                            {{ form.weight_loss_max.errors }}
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label">色泽要求</label>
+                            {{ form.required_color }}
+                            {{ form.required_color.errors }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% if formset.non_form_errors %}
+            <div class="alert alert-danger mt-3">
+                {% for error in formset.non_form_errors %}
+                <p class="mb-0">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+    </div>
+</div>
+
+<div class="d-flex justify-content-end gap-2">
+    <a href="{% url 'herbapp:template_list' %}" class="btn btn-secondary">取消</a>
+    <button type="submit" class="btn btn-primary">
+        {% if is_edit %}保存修改{% else %}创建模板{% endif %}
+    </button>
+</div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    const container = document.getElementById('roundFormSetContainer');
+    const addBtn = document.getElementById('addRoundBtn');
+    const totalFormsInput = document.getElementById('id_form-TOTAL_FORMS');
+    const emptyTemplate = container.querySelector('.empty-template');
+
+    function updateRoundNoDisplays() {
+        container.querySelectorAll('.round-form-item:not([style*="display:none"])').forEach((item, idx) => {
+            if (!item.classList.contains('empty-template')) {
+                const noInput = item.querySelector('.round-no-input');
+                if (noInput && !noInput.value) {
+                    noInput.value = idx + 1;
+                }
+                const display = item.querySelector('.round-no-display');
+                if (display) {
+                    display.textContent = noInput ? (noInput.value || (idx + 1)) : (idx + 1);
+                }
+            }
+        });
+    }
+
+    container.querySelectorAll('.round-no-input').forEach(input => {
+        input.addEventListener('input', e => {
+            const disp = e.target.closest('.round-form-item').querySelector('.round-no-display');
+            if (disp) disp.textContent = e.target.value || '-';
+        });
+    });
+
+    addBtn.addEventListener('click', function() {
+        const count = parseInt(totalFormsInput.value);
+        const clone = emptyTemplate.cloneNode(true);
+        clone.style.display = '';
+        clone.classList.remove('empty-template');
+        clone.classList.add('new-template');
+        clone.innerHTML = clone.innerHTML.replace(/form-__prefix__/g, 'form-' + count);
+        clone.querySelectorAll('[id]').forEach(el => {
+            el.id = el.id.replace('__prefix__', count);
+        });
+        clone.querySelectorAll('[for]').forEach(el => {
+            el.setAttribute('for', el.getAttribute('for').replace('__prefix__', count));
+        });
+        const noInput = clone.querySelector('.round-no-input');
+        if (noInput) {
+            noInput.addEventListener('input', e => {
+                const disp = e.target.closest('.round-form-item').querySelector('.round-no-display');
+                if (disp) disp.textContent = e.target.value || '-';
+            });
+        }
+        container.insertBefore(clone, emptyTemplate);
+        totalFormsInput.value = count + 1;
+        clone.querySelector('.remove-round-btn').addEventListener('click', function() {
+            clone.remove();
+        });
+        updateRoundNoDisplays();
+    });
+
+    container.querySelectorAll('.remove-round-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            this.closest('.round-form-item').remove();
+        });
+    });
+
+    container.querySelectorAll('.delete-checkbox').forEach(cb => {
+        cb.addEventListener('change', function() {
+            const item = this.closest('.round-form-item');
+            item.style.opacity = this.checked ? '0.4' : '1';
+            item.style.textDecoration = this.checked ? 'line-through' : 'none';
+        });
+    });
+
+    updateRoundNoDisplays();
+})();
+</script>
+{% endblock %}

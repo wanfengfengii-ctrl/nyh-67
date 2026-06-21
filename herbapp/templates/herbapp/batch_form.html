@@ -10,6 +10,24 @@
 
 <div class="row justify-content-center">
     <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                选择炮制标准模板 <small class="text-muted ms-2">（选填，引用模板可自动预设参数）</small>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">{{ form.template.label }}</label>
+                    {{ form.template }}
+                    {{ form.template.errors }}
+                    <div id="templatePreview" class="mt-3" style="display:none;">
+                        <div class="alert alert-info small mb-0 p-2">
+                            <div id="templatePreviewContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-header">
                 批次基本信息
@@ -17,16 +35,40 @@
             <div class="card-body">
                 <form method="post" novalidate>
                     {% csrf_token %}
-                    {% for field in form %}
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">{{ field.label }}</label>
-                        {{ field }}
-                        {% if field.help_text %}
-                        <div class="form-text">{{ field.help_text }}</div>
-                        {% endif %}
-                        {{ field.errors }}
+                    <input type="hidden" name="template" value="{{ form.template.value|default:'' }}">
+                    <div class="mb-3 d-none">
+                        <label class="form-label fw-semibold">{{ form.template.label }}</label>
+                        {{ form.template }}
                     </div>
-                    {% endfor %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.batch_no.label }} <span class="text-danger">*</span></label>
+                            {{ form.batch_no }}
+                            {{ form.batch_no.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.herb_name.label }} <span class="text-danger">*</span></label>
+                            {{ form.herb_name }}
+                            {{ form.herb_name.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.initial_weight.label }} <span class="text-danger">*</span></label>
+                            {{ form.initial_weight }}
+                            {{ form.initial_weight.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.required_rounds.label }} <span class="text-danger">*</span>
+                                <small class="text-muted" id="roundsHint"></small>
+                            </label>
+                            {{ form.required_rounds }}
+                            {{ form.required_rounds.errors }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">{{ form.remark.label }}</label>
+                            {{ form.remark }}
+                            {{ form.remark.errors }}
+                        </div>
+                    </div>
                     <div class="d-flex justify-content-end gap-2 mt-4">
                         <a href="{% url 'herbapp:batch_list' %}" class="btn btn-secondary">取消</a>
                         <button type="submit" class="btn btn-primary">创建批次</button>
@@ -36,4 +78,52 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    const templateSelect = document.getElementById('id_template');
+    const hiddenTemplate = document.querySelector('input[name="template"]');
+    const templatePreview = document.getElementById('templatePreview');
+    const previewContent = document.getElementById('templatePreviewContent');
+    const herbInput = document.querySelector('[name="herb_name"]');
+    const roundsInput = document.getElementById('id_required_rounds');
+    const roundsHint = document.getElementById('roundsHint');
+
+    function updateTemplateValue() {
+        const val = templateSelect.value;
+        hiddenTemplate.value = val;
+    }
+
+    templateSelect.addEventListener('change', function() {
+        updateTemplateValue();
+        const val = this.value;
+        if (!val) {
+            templatePreview.style.display = 'none';
+            roundsHint.textContent = '';
+            return;
+        }
+        fetch('/template/' + val + '/api/')
+            .then(r => r.json())
+            .then(data => {
+                roundsInput.value = data.total_rounds;
+                roundsHint.textContent = '（已自动填充模板值）';
+                if (data.herb_name && !herbInput.value) {
+                    herbInput.value = data.herb_name;
+                }
+                const html = `
+                    <strong>📐 ${data.template_name}</strong>
+                    <span class="ms-2">药材：${data.herb_name}</span>
+                    <span class="ms-2">轮次：${data.total_rounds}轮</span>
+                    ${data.description ? `<br><span class="text-muted">${data.description}</span>` : ''}
+                    <br>
+                    <small>已配置 ${data.round_standards.length} 条轮次规则</small>
+                `;
+                previewContent.innerHTML = html;
+                templatePreview.style.display = 'block';
+            });
+    });
+})();
+</script>
 {% endblock %}

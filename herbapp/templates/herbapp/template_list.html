@@ -1,0 +1,115 @@
+{% extends 'herbapp/base.html' %}
+
+{% block title %}炮制标准模板 - 传统药材炮制管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">📐 炮制标准模板管理</h2>
+    <a href="{% url 'herbapp:template_create' %}" class="btn btn-primary">
+        + 新建模板
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">关键字搜索</label>
+                <input type="text" name="q" class="form-control" placeholder="输入模板名称或药材名称" value="{{ q }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">药材名称</label>
+                <input type="text" name="herb" class="form-control" placeholder="药材名" value="{{ herb }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">启用状态</label>
+                <select name="active" class="form-select">
+                    <option value="">全部</option>
+                    <option value="1" {% if active == '1' %}selected{% endif %}>已启用</option>
+                    <option value="0" {% if active == '0' %}selected{% endif %}>已停用</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100">🔍 搜索</button>
+            </div>
+            <div class="col-md-1">
+                <a href="{% url 'herbapp:template_list' %}" class="btn btn-secondary w-100">重置</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>模板名称</th>
+                        <th>适用药材</th>
+                        <th>总轮次</th>
+                        <th>轮次标准</th>
+                        <th>引用批次</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tpl in templates %}
+                    <tr>
+                        <td class="font-serif"><strong>{{ tpl.template_name }}</strong></td>
+                        <td>{{ tpl.herb_name }}</td>
+                        <td>{{ tpl.total_rounds }} 轮</td>
+                        <td>
+                            <span class="badge bg-secondary">{{ tpl.round_standards.count }}条规则</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ tpl.batches.count }}个批次</span>
+                        </td>
+                        <td>
+                            {% if tpl.is_active %}
+                            <span class="badge bg-success">启用中</span>
+                            {% else %}
+                            <span class="badge bg-secondary">已停用</span>
+                            {% endif %}
+                        </td>
+                        <td><small>{{ tpl.created_at|date:"Y-m-d H:i" }}</small></td>
+                        <td>
+                            <a href="{% url 'herbapp:template_detail' tpl.pk %}" class="btn btn-sm btn-outline-primary">查看</a>
+                            <a href="{% url 'herbapp:template_edit' tpl.pk %}" class="btn btn-sm btn-outline-warning">编辑</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <p style="font-size: 1.2rem;">暂无标准模板</p>
+                            <a href="{% url 'herbapp:template_create' %}" class="btn btn-primary mt-2">创建第一个模板</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if is_paginated %}
+    <div class="card-footer">
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?q={{ q }}&herb={{ herb }}&active={{ active }}&page={{ page_obj.previous_page_number }}">上一页</a></li>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                    <a class="page-link" href="?q={{ q }}&herb={{ herb }}&active={{ active }}&page={{ num }}">{{ num }}</a>
+                </li>
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?q={{ q }}&herb={{ herb }}&active={{ active }}&page={{ page_obj.next_page_number }}">下一页</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
