@@ -19,11 +19,17 @@
         </div>
         <div>
             {% if not object.overall_trend %}
-            <a href="{% url 'version_control:quality_run' object.pk %}" class="btn btn-sm btn-success">▶ 运行分析</a>
+            <form method="post" action="{% url 'version_control:quality_run' object.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-success">▶ 运行分析</button>
+            </form>
             {% else %}
-            <a href="{% url 'version_control:quality_run' object.pk %}" class="btn btn-sm btn-outline-secondary">🔄 重新运行</a>
+            <form method="post" action="{% url 'version_control:quality_run' object.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-secondary">🔄 重新运行</button>
+            </form>
                 {% if object.status != 'reviewed' %}
-                <a href="{% url 'version_control:quality_review' object.pk %}" class="btn btn-sm btn-outline-primary">✅ 复核</a>
+                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#reviewModal">✅ 复核</button>
                 {% endif %}
             {% endif %}
         </div>
@@ -172,6 +178,34 @@
 {% else %}
 <div class="alert alert-secondary">
     <i class="bi bi-info-circle"></i> 分析尚未运行。请填写并保存分析参数后，点击右上角 <strong>▶ 运行分析</strong> 按钮。
+</div>
+{% endif %}
+
+{% if object.overall_trend and object.status != 'reviewed' %}
+<div class="modal fade" id="reviewModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="post" action="{% url 'version_control:quality_review' object.pk %}" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title font-serif">复核质量分析</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">{{ review_form.reviewed_by.label }}</label>
+                    {{ review_form.reviewed_by }}
+                </div>
+                <div>
+                    <label class="form-label small fw-semibold">{{ review_form.review_remark.label }}</label>
+                    {{ review_form.review_remark }}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="submit" class="btn btn-primary">确认复核</button>
+            </div>
+        </form>
+    </div>
 </div>
 {% endif %}
 {% endblock %}

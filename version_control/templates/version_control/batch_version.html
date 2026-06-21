@@ -32,7 +32,12 @@
             <span>📦 批次信息</span>
         </div>
         <div>
-            <a href="{% url 'version_control:link_batch_to_version' %}?batch_id={{ link.batch_id }}" class="btn btn-sm btn-outline-primary">🔗 重新关联版本</a>
+            <form method="post" action="{% url 'version_control:batch_link' %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="batch_id" value="{{ link.batch_id }}">
+                <input type="hidden" name="user" value="页面操作">
+                <button type="submit" class="btn btn-sm btn-outline-primary">🔗 重新关联版本</button>
+            </form>
         </div>
     </div>
     <div class="card-body">
@@ -51,41 +56,38 @@
     <div class="card-header"><span>🗂 当时采用的工艺标准版本快照</span></div>
     <div class="card-body p-0">
         <div class="accordion" id="snapshotAccordion">
-            {% if link.snapshot and link.snapshot.template_snapshot %}
+            {% if link.version_snapshot and link.version_snapshot.template_snapshot %}
             <div class="accordion-item border-0 border-bottom">
                 <h2 class="accordion-header">
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tplCollapse">
                         📋 炮制标准模板
-                        {% if link.snapshot.template_snapshot.version_code %}
-                        <span class="badge bg-info ms-2">V{{ link.snapshot.template_snapshot.version_code }}</span>
+                        {% if link.template_version_at_use %}
+                        <span class="badge bg-info ms-2">{{ link.template_version_at_use }}</span>
                         {% endif %}
                     </button>
                 </h2>
                 <div id="tplCollapse" class="accordion-collapse collapse" data-bs-parent="#snapshotAccordion">
                     <div class="accordion-body">
-                        <pre class="bg-light p-3 rounded small overflow-auto" style="max-height:400px;">{{ link.snapshot.template_snapshot|pprint }}</pre>
+                        <pre class="bg-light p-3 rounded small overflow-auto" style="max-height:400px;">{{ link.template_snapshot_at_use|pprint }}</pre>
                     </div>
                 </div>
             </div>
             {% endif %}
-            {% if link.snapshot and link.snapshot.env_snapshot %}
+            {% if link.env_standards_at_use %}
             <div class="accordion-item border-0 border-bottom">
                 <h2 class="accordion-header">
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#envCollapse">
                         🌡 环境参数标准
-                        {% if link.snapshot.env_snapshot.version_code %}
-                        <span class="badge bg-info ms-2">V{{ link.snapshot.env_snapshot.version_code }}</span>
-                        {% endif %}
                     </button>
                 </h2>
                 <div id="envCollapse" class="accordion-collapse collapse" data-bs-parent="#snapshotAccordion">
                     <div class="accordion-body">
-                        <pre class="bg-light p-3 rounded small overflow-auto" style="max-height:400px;">{{ link.snapshot.env_snapshot|pprint }}</pre>
+                        <pre class="bg-light p-3 rounded small overflow-auto" style="max-height:400px;">{{ link.env_standards_at_use|pprint }}</pre>
                     </div>
                 </div>
             </div>
             {% endif %}
-            {% if link.snapshot and link.snapshot.equipment_op_snapshot %}
+            {% if link.equipment_ops_at_use %}
             <div class="accordion-item border-0 border-bottom">
                 <h2 class="accordion-header">
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#eqCollapse">
@@ -94,12 +96,12 @@
                 </h2>
                 <div id="eqCollapse" class="accordion-collapse collapse" data-bs-parent="#snapshotAccordion">
                     <div class="accordion-body">
-                        <pre class="bg-light p-3 rounded small overflow-auto" style="max-height:400px;">{{ link.snapshot.equipment_op_snapshot|pprint }}</pre>
+                        <pre class="bg-light p-3 rounded small overflow-auto" style="max-height:400px;">{{ link.equipment_ops_at_use|pprint }}</pre>
                     </div>
                 </div>
             </div>
             {% endif %}
-            {% if link.snapshot and link.snapshot.acceptance_snapshot %}
+            {% if link.acceptance_rules_at_use %}
             <div class="accordion-item border-0">
                 <h2 class="accordion-header">
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#accCollapse">
@@ -108,7 +110,7 @@
                 </h2>
                 <div id="accCollapse" class="accordion-collapse collapse" data-bs-parent="#snapshotAccordion">
                     <div class="accordion-body">
-                        <pre class="bg-light p-3 rounded small overflow-auto" style="max-height:400px;">{{ link.snapshot.acceptance_snapshot|pprint }}</pre>
+                        <pre class="bg-light p-3 rounded small overflow-auto" style="max-height:400px;">{{ link.acceptance_rules_at_use|pprint }}</pre>
                     </div>
                 </div>
             </div>

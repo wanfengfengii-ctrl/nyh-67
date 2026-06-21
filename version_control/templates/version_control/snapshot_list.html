@@ -32,7 +32,7 @@
                         <td>{% if obj.change_request %}<a href="{% url 'version_control:change_detail' obj.change_request.pk %}" class="text-decoration-none">{{ obj.change_request.request_no }}</a>{% else %}—{% endif %}</td>
                         <td>
                             <a href="{% url 'version_control:snapshot_detail' obj.pk %}" class="btn btn-sm btn-outline-primary">详情</a>
-                            <a href="{% url 'version_control:snapshot_update' obj.pk %}" class="btn btn-sm btn-outline-secondary">编辑</a>
+                            <a href="{% url 'version_control:snapshot_detail' obj.pk %}" class="btn btn-sm btn-outline-secondary">查看快照</a>
                         </td>
                     </tr>
                     {% empty %}

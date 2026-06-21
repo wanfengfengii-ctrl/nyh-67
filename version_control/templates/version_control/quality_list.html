@@ -58,10 +58,13 @@
                             <div class="btn-group btn-group-sm">
                                 <a href="{% url 'version_control:quality_detail' obj.pk %}" class="btn btn-outline-primary">详情</a>
                                 {% if not obj.overall_trend %}
-                                <a href="{% url 'version_control:quality_run' obj.pk %}" class="btn btn-outline-success">▶ 运行</a>
+                                <form method="post" action="{% url 'version_control:quality_run' obj.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-success">▶ 运行</button>
+                                </form>
                                 {% endif %}
                                 {% if obj.overall_trend and obj.status != 'reviewed' %}
-                                <a href="{% url 'version_control:quality_review' obj.pk %}" class="btn btn-outline-info">复核</a>
+                                <a href="{% url 'version_control:quality_detail' obj.pk %}" class="btn btn-outline-info">复核</a>
                                 {% endif %}
                             </div>
                         </td>

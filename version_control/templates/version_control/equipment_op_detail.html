@@ -16,8 +16,7 @@
             {% if object.is_current %}<span class="badge bg-success ms-1">当前版本</span>{% endif %}
         </div>
         <div>
-            <a href="{% url 'version_control:equipment_op_update' object.pk %}" class="btn btn-sm btn-outline-primary">编辑</a>
-            <a href="{% url 'version_control:change_create' %}?standard_type=equipment_op&source_standard_id={{ object.pk }}&source_version_code={{ object.version_code }}" class="btn btn-sm btn-outline-warning">📝 申请变更</a>
+            <a href="{% url 'version_control:change_create' %}?standard_type=equipment_operation&source_id={{ object.pk }}" class="btn btn-sm btn-outline-warning">📝 申请变更</a>
         </div>
     </div>
     <div class="card-body">
@@ -25,7 +24,7 @@
             <div class="col-md-3"><small class="text-muted d-block">版本号</small><code>{{ object.version_code|default:"—" }}</code></div>
             <div class="col-md-3"><small class="text-muted d-block">主记录ID</small>{{ object.master_id|default:"—" }}</div>
             <div class="col-md-3"><small class="text-muted d-block">设备类型</small>{{ object.equipment_type|default:"—" }}</div>
-            <div class="col-md-3"><small class="text-muted d-block">设备</small>{{ object.equipment_name|default:"—" }}</div>
+            <div class="col-md-3"><small class="text-muted d-block">设备</small>{{ object.equipment|default:"—" }}</div>
             <div class="col-md-4"><small class="text-muted d-block">操作阶段</small>{{ object.get_operation_stage_display }}</div>
             <div class="col-md-4"><small class="text-muted d-block">参数严重度</small><span class="badge vc-priority-{{ object.param_severity }}">{{ object.get_param_severity_display }}</span></div>
             <div class="col-md-4"><small class="text-muted d-block">创建人/时间</small><small>{{ object.version_created_by|default:"—" }} / {{ object.version_created_at|date:"Y-m-d H:i" }}</small></div>
