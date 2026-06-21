@@ -19,7 +19,7 @@ urlpatterns = [
     path('batch/<int:batch_pk>/env-record/create/', views.EnvironmentRecordCreateView.as_view(), name='batch_env_record_create'),
     path('batch/<int:batch_pk>/env-check/', views.EnvironmentRecordCheckApi.as_view(), name='env_check_api'),
 
-    path('equipments/', views.EquipmentListView.as_view(), name='equipment_list'),
+    path('equipment/', views.EquipmentListView.as_view(), name='equipment_list'),
     path('equipment/create/', views.EquipmentCreateView.as_view(), name='equipment_create'),
     path('equipment/<int:pk>/', views.EquipmentDetailView.as_view(), name='equipment_detail'),
     path('equipment/<int:pk>/edit/', views.EquipmentUpdateView.as_view(), name='equipment_edit'),
@@ -34,6 +34,7 @@ urlpatterns = [
     path('drying-record/create/', views.DryingAreaRecordCreateView.as_view(), name='drying_record_create'),
     path('drying-record/<int:pk>/', views.DryingAreaRecordDetailView.as_view(), name='drying_record_detail'),
     path('batch/<int:batch_pk>/drying-record/create/', views.DryingAreaRecordCreateView.as_view(), name='batch_drying_record_create'),
+    path('batch/<int:batch_pk>/drying-check/', views.DryingAreaRecordCheckApi.as_view(), name='drying_check_api'),
 
     path('inspections/', views.InspectionRecordListView.as_view(), name='inspection_list'),
     path('inspection/create/', views.InspectionRecordCreateView.as_view(), name='inspection_create'),

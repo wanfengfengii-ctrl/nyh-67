@@ -17,7 +17,7 @@
     {% else %}
     <span class="badge bg-secondary ms-2" style="font-size: 0.9rem;">{{ equipment.get_status_display }}</span>
     {% endif %}
-    <a href="{% url 'processing:equipment_update' equipment.pk %}" class="btn btn-outline-primary ms-auto">
+    <a href="{% url 'processing:equipment_edit' equipment.pk %}" class="btn btn-outline-primary ms-auto">
         ✏️ 编辑设备
     </a>
 </div>

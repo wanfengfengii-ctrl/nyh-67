@@ -246,6 +246,31 @@ class EnvironmentRecordCheckApi(View):
         })
 
 
+class DryingAreaRecordCheckApi(View):
+    def post(self, request, batch_pk):
+        batch = get_object_or_404(HerbBatch, pk=batch_pk)
+        try:
+            temperature = request.POST.get('temperature', '')
+            humidity = request.POST.get('humidity', '')
+            temperature = float(temperature) if temperature else None
+            humidity = float(humidity) if humidity else None
+        except (ValueError, TypeError):
+            return JsonResponse({'ok': False, 'error': '参数无效'})
+
+        temp_record = DryingAreaRecord(
+            batch=batch,
+            temperature=temperature,
+            humidity=humidity,
+        )
+        is_abnormal, abnormalities = temp_record.detect_abnormalities()
+
+        return JsonResponse({
+            'ok': True,
+            'is_abnormal': is_abnormal,
+            'abnormalities': abnormalities,
+        })
+
+
 class EquipmentListView(ListView):
     model = Equipment
     template_name = 'processing/equipment_list.html'

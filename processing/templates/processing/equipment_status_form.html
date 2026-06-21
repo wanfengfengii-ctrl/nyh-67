@@ -37,7 +37,6 @@
         </div>
         {% endif %}
 
-        {% if batch or record %}
         <div class="card">
             <div class="card-header">
                 设备状态信息
@@ -46,6 +45,13 @@
                 <form method="post" novalidate>
                     {% csrf_token %}
                     <div class="row g-3">
+                        {% if not batch %}
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.batch.label }} <span class="text-danger">*</span></label>
+                            {{ form.batch }}
+                            {{ form.batch.errors }}
+                        </div>
+                        {% endif %}
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">{{ form.equipment.label }} <span class="text-danger">*</span></label>
                             {{ form.equipment }}
@@ -104,7 +110,6 @@
                 </form>
             </div>
         </div>
-        {% endif %}
     </div>
 </div>
 {% endblock %}

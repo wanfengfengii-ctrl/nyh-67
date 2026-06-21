@@ -4,7 +4,7 @@
 
 {% block page_content %}
 <div class="d-flex align-items-center mb-4">
-    <a href="{% if batch %}{% url 'processing:batch_drying_records' batch.pk %}{% else %}{% url 'processing:drying_record_list' %}{% endif %}" class="btn btn-outline-secondary me-3">← 返回</a>
+    <a href="{% if batch %}{% url 'processing:batch_env_monitoring' batch.pk %}{% else %}{% url 'processing:drying_record_list' %}{% endif %}" class="btn btn-outline-secondary me-3">← 返回</a>
     <h2 class="font-serif mb-0" style="color: var(--ochre);">
         📝 {% if object %}编辑晾晒区域记录{% else %}新增晾晒区域记录{% endif %}
     </h2>
@@ -26,13 +26,9 @@
                     {% csrf_token %}
                     {% if not batch %}
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">所属批次 <span class="text-danger">*</span></label>
-                        <select name="batch" class="form-select" required>
-                            <option value="">请选择批次</option>
-                            {% for b in batches %}
-                            <option value="{{ b.id }}" {% if object and object.batch_id == b.id %}selected{% endif %}>{{ b.batch_no }} - {{ b.herb_name }}</option>
-                            {% endfor %}
-                        </select>
+                        <label class="form-label fw-semibold">{{ form.batch.label }} <span class="text-danger">*</span></label>
+                        {{ form.batch }}
+                        {{ form.batch.errors }}
                     </div>
                     {% endif %}
                     
@@ -130,7 +126,7 @@
                         </div>
                     </div>
                     <div class="d-flex justify-content-end gap-2 mt-4">
-                        <a href="{% if batch %}{% url 'processing:batch_drying_records' batch.pk %}{% else %}{% url 'processing:drying_record_list' %}{% endif %}" class="btn btn-secondary">取消</a>
+                        <a href="{% if batch %}{% url 'processing:batch_env_monitoring' batch.pk %}{% else %}{% url 'processing:drying_record_list' %}{% endif %}" class="btn btn-secondary">取消</a>
                         <button type="submit" class="btn btn-primary" id="submitBtn">保存记录</button>
                     </div>
                 </form>
@@ -230,7 +226,7 @@
         formData.append('temperature', temperature);
         formData.append('humidity', humidity);
         
-        fetch("{% url 'processing:drying_check_api' batch.pk if batch else 0 %}".replace('/0/', '/' + batchId + '/'), {
+        fetch("{% if batch %}{% url 'processing:drying_check_api' batch.pk %}{% else %}/processing/batch/0/drying-check/{% endif %}".replace('/0/', '/' + batchId + '/'), {
             method: 'POST',
             headers: {
                 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value

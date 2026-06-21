@@ -29,7 +29,7 @@
                         <label class="form-label fw-semibold">所属批次 <span class="text-danger">*</span></label>
                         <select name="batch" class="form-select" required>
                             <option value="">请选择批次</option>
-                            {% for b in batches %}
+                            {% for b in form.batch.field.queryset %}
                             <option value="{{ b.id }}">{{ b.batch_no }} - {{ b.herb_name }}</option>
                             {% endfor %}
                         </select>

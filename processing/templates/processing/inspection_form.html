@@ -36,22 +36,14 @@
                             {{ form.inspection_time.errors }}
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">关联批次</label>
-                            <select name="batch" class="form-select">
-                                <option value="">无关联批次</option>
-                                {% for b in batches %}
-                                <option value="{{ b.id }}" {% if object and object.batch_id == b.id %}selected{% elif batch and batch.id == b.id %}selected{% endif %}>{{ b.batch_no }} - {{ b.herb_name }}</option>
-                                {% endfor %}
-                            </select>
+                            <label class="form-label fw-semibold">{{ form.batch.label }}</label>
+                            {{ form.batch }}
+                            {{ form.batch.errors }}
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">巡检设备</label>
-                            <select name="equipment" class="form-select">
-                                <option value="">无巡检设备</option>
-                                {% for e in equipments %}
-                                <option value="{{ e.id }}" {% if object and object.equipment_id == e.id %}selected{% endif %}>{{ e.equipment_no }} - {{ e.equipment_name }}</option>
-                                {% endfor %}
-                            </select>
+                            <label class="form-label fw-semibold">{{ form.equipment.label }}</label>
+                            {{ form.equipment }}
+                            {{ form.equipment.errors }}
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">{{ form.inspector.label }} <span class="text-danger">*</span></label>
