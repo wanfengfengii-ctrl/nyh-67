@@ -1,0 +1,75 @@
+{% extends 'version_control/base.html' %}
+
+{% block page_title %}工艺快照详情{% endblock %}
+{% block header_title %}工艺版本综合快照 — 详情{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'version_control:snapshot_list' %}" class="text-decoration-none">工艺快照</a></li>
+<li class="breadcrumb-item active" aria-current="page">#{{ object.pk }}</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>📋 基本信息</span>
+        <div>
+            <a href="{% url 'version_control:snapshot_update' object.pk %}" class="btn btn-sm btn-outline-primary">编辑</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3"><small class="text-muted d-block">快照ID</small>#{{ object.pk }}</div>
+            <div class="col-md-3"><small class="text-muted d-block">快照名称</small>{{ object.snapshot_name|default:"—" }}</div>
+            <div class="col-md-3"><small class="text-muted d-block">工艺模板</small>{{ object.template_version_code|default:"—" }} (#{{ object.template_standard_id|default:"?" }})</div>
+            <div class="col-md-3"><small class="text-muted d-block">关联变更</small>
+                {% if object.change_request %}
+                <a href="{% url 'version_control:change_detail' object.change_request.pk %}" class="text-decoration-none">{{ object.change_request.request_no }}</a>
+                {% else %}—{% endif %}
+            </div>
+            <div class="col-md-4"><small class="text-muted d-block">创建人</small>{{ object.created_by|default:"—" }}</div>
+            <div class="col-md-4"><small class="text-muted d-block">创建时间</small><small>{{ object.created_at|date:"Y-m-d H:i:s" }}</small></div>
+            <div class="col-md-4"><small class="text-muted d-block">关联批次数</small>{{ object.batch_links.count }}</div>
+            <div class="col-md-12"><small class="text-muted d-block">备注</small>{{ object.remark|default:"—" }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><span>🗂 快照内容 (JSON)</span></div>
+    <div class="card-body p-0">
+        <div class="accordion" id="snapDetailAccordion">
+            <div class="accordion-item border-0 border-bottom">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tplD">📋 炮制模板快照</button>
+                </h2>
+                <div id="tplD" class="accordion-collapse collapse" data-bs-parent="#snapDetailAccordion">
+                    <div class="accordion-body"><pre class="bg-light p-3 rounded small overflow-auto" style="max-height:400px;">{{ object.template_snapshot|pprint }}</pre></div>
+                </div>
+            </div>
+            <div class="accordion-item border-0 border-bottom">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#envD">🌡 环境参数快照</button>
+                </h2>
+                <div id="envD" class="accordion-collapse collapse" data-bs-parent="#snapDetailAccordion">
+                    <div class="accordion-body"><pre class="bg-light p-3 rounded small overflow-auto" style="max-height:400px;">{{ object.env_snapshot|pprint }}</pre></div>
+                </div>
+            </div>
+            <div class="accordion-item border-0 border-bottom">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#eqD">⚙️ 设备操作快照</button>
+                </h2>
+                <div id="eqD" class="accordion-collapse collapse" data-bs-parent="#snapDetailAccordion">
+                    <div class="accordion-body"><pre class="bg-light p-3 rounded small overflow-auto" style="max-height:400px;">{{ object.equipment_op_snapshot|pprint }}</pre></div>
+                </div>
+            </div>
+            <div class="accordion-item border-0">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#accD">✅ 验收规则快照</button>
+                </h2>
+                <div id="accD" class="accordion-collapse collapse" data-bs-parent="#snapDetailAccordion">
+                    <div class="accordion-body"><pre class="bg-light p-3 rounded small overflow-auto" style="max-height:400px;">{{ object.acceptance_snapshot|pprint }}</pre></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends 'version_control/base.html' %}
+
+{% block page_title %}{% if object %}编辑{% else %}新建{% endif %}验收规则{% endblock %}
+{% block header_title %}{% if object %}编辑{% else %}新建{% endif %}验收规则标准{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'version_control:acceptance_rule_list' %}" class="text-decoration-none">验收规则</a></li>
+<li class="breadcrumb-item active" aria-current="page">{% if object %}编辑{% else %}新建{% endif %}</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" class="row g-3">
+                    {% csrf_token %}
+                    <div class="col-md-6">
+                        <label class="form-label small">规则名称 *</label>
+                        {{ form.standard_name }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">规则类型 *</label>
+                        {{ form.rule_type }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">阈值最小值</label>
+                        {{ form.threshold_min }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">阈值最大值</label>
+                        {{ form.threshold_max }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">综合评分权重</label>
+                        {{ form.weight_in_comprehensive }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small">规则描述</label>
+                        {{ form.rule_description }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">版本备注</label>
+                        {{ form.version_remark }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">状态</label>
+                        {{ form.version_status }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">是否当前版本</label>
+                        <div class="pt-2">{{ form.is_current }}</div>
+                    </div>
+                    <div class="col-12 pt-3 border-top">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'version_control:acceptance_rule_list' %}" class="btn btn-outline-secondary">取消</a>
+                            <button type="submit" class="btn btn-primary">💾 保存</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends 'version_control/base.html' %}
+
+{% block page_title %}{{ standard_type_display }} 版本历史{% endblock %}
+{% block header_title %}{{ standard_type_display }} — 版本历史{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active" aria-current="page">版本历史</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small">标准类型</label>
+                {{ form.standard_type }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small">主记录ID (master_id)</label>
+                {{ form.master_id }}
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">📋 查看历史</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if versions %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div><span>📚 版本时间线 — 共 {{ versions|length }} 个版本</span></div>
+        {% if master_id %}
+        <a href="{% url 'version_control:version_compare' %}?master_id={{ master_id }}&standard_type={{ standard_type }}" class="btn btn-sm btn-outline-primary">🔀 选择两版对比</a>
+        {% endif %}
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>版本号</th><th>名称</th><th>状态</th><th>当前版本</th>
+                        <th>备注</th><th>创建人</th><th>创建时间</th><th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in versions %}
+                    <tr>
+                        <td><code>{{ v.version_code }}</code></td>
+                        <td>{{ v.template_name|default:v.standard_name|default:v.name }}</td>
+                        <td><span class="badge vc-status-{{ v.version_status }}">{{ v.get_version_status_display }}</span></td>
+                        <td>{% if v.is_current %}<span class="badge bg-success">✅ 当前</span>{% else %}—{% endif %}</td>
+                        <td><small>{{ v.version_remark|default:"—" }}</small></td>
+                        <td>{{ v.version_created_by|default:"—" }}</td>
+                        <td><small>{{ v.version_created_at|date:"Y-m-d H:i" }}</small></td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                {% if forloop.first == False %}
+                                <a href="{% url 'version_control:version_compare' %}?standard_type={{ standard_type }}&master_id={{ master_id }}&id_left={{ v.pk }}&id_right={{ versions.0.pk }}" class="btn btn-outline-primary">对比最新</a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% elif request.GET %}
+<div class="alert alert-secondary">
+    <i class="bi bi-info-circle"></i> 未找到匹配的版本记录。请检查主记录ID是否正确。
+</div>
+{% endif %}
+{% endblock %}

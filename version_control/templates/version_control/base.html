@@ -1,0 +1,106 @@
+{% extends 'herbapp/base.html' %}
+
+{% block title %}{% block page_title %}工艺变更与版本管理{% endblock %} - 传统药材炮制管理系统{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-2">
+            <li class="breadcrumb-item">
+                <a href="{% url 'version_control:dashboard' %}" class="text-decoration-none">工艺版本管理</a>
+            </li>
+            {% block breadcrumb %}{% endblock %}
+        </ol>
+    </nav>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <h3 class="font-serif mb-0" style="color: var(--ochre);">
+            <span style="display:inline-block;transform:rotate(90deg);margin-right:8px;">📋</span>
+            {% block header_title %}工艺变更审批与版本管理{% endblock %}
+        </h3>
+        <div class="d-flex gap-2 flex-wrap">
+            {% block header_actions %}{% endblock %}
+        </div>
+    </div>
+</div>
+
+{% if messages %}
+<div class="mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'warning' %}warning{% elif message.tags == 'success' %}success{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% block page_content %}{% endblock %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .vc-status-draft { background-color: #6c757d; }
+    .vc-status-submitted { background-color: #0d6efd; }
+    .vc-status-reviewing { background-color: #7952b3; }
+    .vc-status-approved { background-color: var(--gold); color: #fff; }
+    .vc-status-rejected { background-color: var(--vermilion); }
+    .vc-status-cancelled { background-color: #495057; }
+    .vc-status-published { background-color: var(--herb-green); }
+    .vc-priority-low { background-color: #adb5bd; color: #000; }
+    .vc-priority-medium { background-color: #0d6efd; }
+    .vc-priority-high { background-color: var(--gold); color: #fff; }
+    .vc-priority-urgent { background-color: var(--vermilion); }
+    .trend-improved { color: var(--herb-green); font-weight: 600; }
+    .trend-stable { color: #0d6efd; font-weight: 600; }
+    .trend-declined { color: var(--vermilion); font-weight: 600; }
+    .trend-inconclusive { color: #6c757d; font-weight: 600; }
+    .diff-row.changed { background-color: #fff3cd; }
+    .diff-before { color: var(--vermilion); text-decoration: line-through; }
+    .diff-after { color: var(--herb-green); font-weight: 600; }
+    .snapshot-card { transition: transform 0.15s; }
+    .snapshot-card:hover { transform: translateY(-2px); }
+    .approval-timeline {
+        border-left: 3px solid rgba(139,69,19,0.2);
+        padding-left: 1.5rem;
+        margin-left: 0.5rem;
+    }
+    .approval-item {
+        position: relative;
+        padding-bottom: 1rem;
+    }
+    .approval-item::before {
+        content: '';
+        position: absolute;
+        left: -1.72rem;
+        top: 0.4rem;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--ochre);
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 2px var(--ochre);
+    }
+    .sub-nav {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        padding: 0.75rem 1rem;
+        background: #fff;
+        border: 1px solid rgba(139,69,19,0.2);
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+    .sub-nav a {
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        text-decoration: none;
+        color: var(--ochre);
+        font-weight: 500;
+        transition: all 0.15s;
+    }
+    .sub-nav a:hover, .sub-nav a.active {
+        background-color: var(--ochre);
+        color: var(--paper);
+    }
+</style>
+{% endblock %}

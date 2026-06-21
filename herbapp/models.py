@@ -4,7 +4,19 @@ from django.utils import timezone
 
 
 class ProcessingStandardTemplate(models.Model):
-    template_name = models.CharField('模板名称', max_length=100, unique=True)
+    VERSION_STATUS_DRAFT = 'draft'
+    VERSION_STATUS_PENDING = 'pending'
+    VERSION_STATUS_APPROVED = 'approved'
+    VERSION_STATUS_OBSOLETE = 'obsolete'
+
+    VERSION_STATUS_CHOICES = [
+        (VERSION_STATUS_DRAFT, '草稿'),
+        (VERSION_STATUS_PENDING, '待审批'),
+        (VERSION_STATUS_APPROVED, '已批准'),
+        (VERSION_STATUS_OBSOLETE, '已废弃'),
+    ]
+
+    template_name = models.CharField('模板名称', max_length=100)
     herb_name = models.CharField('适用药材', max_length=100)
     total_rounds = models.PositiveIntegerField('总轮次数', default=9)
     description = models.TextField('模板说明', blank=True, null=True)
@@ -12,17 +24,71 @@ class ProcessingStandardTemplate(models.Model):
     updated_at = models.DateTimeField('更新时间', auto_now=True)
     is_active = models.BooleanField('是否启用', default=True)
 
+    version_code = models.CharField('版本号', max_length=30, blank=True, null=True)
+    version_major = models.PositiveIntegerField('主版本号', default=1)
+    version_minor = models.PositiveIntegerField('次版本号', default=0)
+    version_status = models.CharField(
+        '版本状态', max_length=20, choices=VERSION_STATUS_CHOICES,
+        default=VERSION_STATUS_APPROVED
+    )
+    master_id = models.PositiveIntegerField('主记录ID', blank=True, null=True)
+    is_current = models.BooleanField('是否当前版本', default=True)
+    version_remark = models.TextField('版本说明', blank=True, null=True)
+    version_created_at = models.DateTimeField('版本创建时间', blank=True, null=True)
+    version_created_by = models.CharField('版本创建人', max_length=50, blank=True, null=True)
+
     class Meta:
         verbose_name = '炮制标准模板'
         verbose_name_plural = verbose_name
         ordering = ['-created_at']
 
     def __str__(self):
-        return f'{self.template_name} ({self.herb_name} - {self.total_rounds}轮)'
+        version = f' [{self.version_code}]' if self.version_code else ''
+        return f'{self.template_name}{version} ({self.herb_name} - {self.total_rounds}轮)'
 
     def clean(self):
         if self.total_rounds is not None and self.total_rounds < 1:
             raise ValidationError({'total_rounds': '总轮次必须大于等于1'})
+        if not self.version_code:
+            self.version_code = f'V{self.version_major}.{self.version_minor}'
+
+    def save(self, *args, **kwargs):
+        if not self.version_code:
+            self.version_code = f'V{self.version_major}.{self.version_minor}'
+        if not self.version_created_at:
+            self.version_created_at = self.created_at or timezone.now()
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_key_fields(cls):
+        return [
+            'template_name', 'herb_name', 'total_rounds', 'description',
+        ]
+
+    def make_version_snapshot(self, include_rounds=True):
+        snap = {
+            'template_name': self.template_name,
+            'herb_name': self.herb_name,
+            'total_rounds': self.total_rounds,
+            'description': self.description,
+            'version_code': self.version_code,
+            'version_major': self.version_major,
+            'version_minor': self.version_minor,
+        }
+        if include_rounds:
+            rounds_snap = []
+            for rs in self.round_standards.all():
+                rounds_snap.append({
+                    'round_no': rs.round_no,
+                    'steam_time_min': str(rs.steam_time_min),
+                    'steam_time_max': str(rs.steam_time_max),
+                    'dry_duration_min': str(rs.dry_duration_min),
+                    'dry_duration_max': str(rs.dry_duration_max),
+                    'weight_loss_max': str(rs.weight_loss_max),
+                    'required_color': rs.required_color,
+                })
+            snap['round_standards'] = rounds_snap
+        return snap
 
 
 class RoundStandard(models.Model):

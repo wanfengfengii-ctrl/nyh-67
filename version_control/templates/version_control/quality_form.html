@@ -1,0 +1,81 @@
+{% extends 'version_control/base.html' %}
+
+{% block page_title %}{% if object %}编辑{% else %}新建{% endif %}质量波动分析{% endblock %}
+{% block header_title %}{% if object %}编辑{% else %}新建{% endif %}质量波动分析{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'version_control:quality_list' %}" class="text-decoration-none">质量分析</a></li>
+<li class="breadcrumb-item active" aria-current="page">{% if object %}编辑{% else %}新建{% endif %}</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" class="row g-3">
+                    {% csrf_token %}
+                    <div class="col-md-6">
+                        <label class="form-label small">分析名称</label>
+                        {{ form.analysis_name }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">关联变更申请</label>
+                        {{ form.change_request }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">药材名称</label>
+                        {{ form.herb_name }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">药材ID</label>
+                        {{ form.herb_id }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">创建人</label>
+                        {{ form.created_by }}
+                    </div>
+                    <div class="col-12 border-top pt-3">
+                        <h6 class="fw-semibold text-muted">变更前统计窗口</h6>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">起始日期 *</label>
+                        {{ form.before_start_date }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">结束日期 *</label>
+                        {{ form.before_end_date }}
+                    </div>
+                    <div class="col-12 border-top pt-3">
+                        <h6 class="fw-semibold text-muted">变更后统计窗口</h6>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">起始日期 *</label>
+                        {{ form.after_start_date }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">结束日期 *</label>
+                        {{ form.after_end_date }}
+                    </div>
+                    <div class="col-12 border-top pt-3">
+                        <h6 class="fw-semibold text-muted">批次筛选</h6>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">加工方式</label>
+                        {{ form.process_type }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">生产车间</label>
+                        {{ form.workshop }}
+                    </div>
+                    <div class="col-12 pt-3 border-top">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'version_control:quality_list' %}" class="btn btn-outline-secondary">取消</a>
+                            <button type="submit" class="btn btn-primary">💾 保存</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

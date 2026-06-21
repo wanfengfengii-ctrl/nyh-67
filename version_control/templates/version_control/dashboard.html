@@ -1,0 +1,154 @@
+{% extends 'version_control/base.html' %}
+
+{% block page_title %}版本管理仪表盘{% endblock %}
+{% block header_title %}工艺变更审批与版本管理 · 仪表盘{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'version_control:change_create' %}" class="btn btn-primary">
+    <span>+</span> 提交变更申请
+</a>
+{% endblock %}
+
+{% block page_content %}
+<div class="sub-nav mb-4">
+    <a href="{% url 'version_control:dashboard' %}" class="active">📊 仪表盘</a>
+    <a href="{% url 'version_control:change_list' %}">📝 变更申请</a>
+    <a href="{% url 'version_control:version_compare' %}">🔍 版本对比</a>
+    <a href="{% url 'version_control:standard_history' %}">📚 版本历史</a>
+    <a href="{% url 'version_control:batch_version' %}">📦 批次版本</a>
+    <a href="{% url 'version_control:snapshot_list' %}">🗂️ 工艺快照</a>
+    <a href="{% url 'version_control:equipment_op_list' %}">⚙️ 设备操作要求</a>
+    <a href="{% url 'version_control:acceptance_rule_list' %}">✅ 验收规则</a>
+    <a href="{% url 'version_control:quality_list' %}">📈 质量波动分析</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="card stat-card h-100">
+            <div class="stat-label">待审核变更</div>
+            <div class="stat-value" style="color: #0d6efd;">{{ pending_changes }}</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card stat-card h-100">
+            <div class="stat-label">变更申请总数</div>
+            <div class="stat-value">{{ total_changes }}</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card stat-card h-100">
+            <div class="stat-label">已发布变更</div>
+            <div class="stat-value" style="color: var(--herb-green);">{{ approved_changes }}</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card stat-card h-100">
+            <div class="stat-label">现行设备/验收规则</div>
+            <div class="stat-value" style="color: var(--gold);">{{ total_equipment_ops }} / {{ total_acceptance_rules }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">
+                <span>📝</span> 最近变更申请
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>申请编号</th>
+                                <th>标题</th>
+                                <th>类型</th>
+                                <th>状态</th>
+                                <th>优先级</th>
+                                <th>时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in recent_changes %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'version_control:change_detail' c.pk %}" class="text-decoration-none">
+                                        <code>{{ c.request_no }}</code>
+                                    </a>
+                                </td>
+                                <td>{{ c.title|truncatechars:30 }}</td>
+                                <td><small>{{ c.get_standard_type_display }}</small></td>
+                                <td>
+                                    <span class="badge vc-status-{{ c.status }}">{{ c.get_status_display }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge vc-priority-{{ c.priority }}">{{ c.get_priority_display }}</span>
+                                </td>
+                                <td><small>{{ c.created_at|date:"Y-m-d H:i" }}</small></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center text-muted py-4">暂无变更申请</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer text-end">
+                <a href="{% url 'version_control:change_list' %}" class="btn btn-sm btn-outline-primary">查看全部 →</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card mb-4">
+            <div class="card-header">
+                <span>📈</span> 最近质量波动分析
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for qa in recent_analyses %}
+                    <a href="{% url 'version_control:quality_detail' qa.pk %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-semibold">{{ qa.title|truncatechars:30 }}</div>
+                            <small class="text-muted">
+                                {{ qa.analysis_no }} · {{ qa.created_at|date:"Y-m-d" }}
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <span class="trend-{{ qa.overall_trend }} d-block">
+                                {{ qa.get_overall_trend_display }}
+                            </span>
+                            {% if qa.score_change_pct %}
+                            <small class="text-muted">
+                                评分变化: {% if qa.score_change_pct > 0 %}+{% endif %}{{ qa.score_change_pct }}%
+                            </small>
+                            {% endif %}
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="p-4 text-center text-muted">暂无质量分析记录</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span>🏷️</span> 炮制模板版本分布
+            </div>
+            <div class="card-body">
+                {% for item in template_versions %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge vc-status-{{ item.version_status|default:'pending' }}" style="min-width: 80px;">
+                        {{ item.get_version_status_display|default:item.version_status }}
+                    </span>
+                    <span class="fw-semibold">{{ item.count }} 个版本</span>
+                </div>
+                {% empty %}
+                <div class="text-muted text-center py-3">暂无模板数据</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

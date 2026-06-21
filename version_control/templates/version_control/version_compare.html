@@ -1,0 +1,144 @@
+{% extends 'version_control/base.html' %}
+
+{% block page_title %}版本对比{% endblock %}
+{% block header_title %}版本对比工具{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active" aria-current="page">版本对比</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small">标准类型</label>
+                {{ form.standard_type }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">主记录ID</label>
+                {{ form.master_id }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">左侧记录ID</label>
+                {{ form.id_left }}
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">右侧记录ID</label>
+                {{ form.id_right }}
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">🔍 对比</button>
+            </div>
+            <div class="col-md-3 offset-md-2">
+                <label class="form-label small">或 左侧版本号</label>
+                {{ form.version_left }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small">或 右侧版本号</label>
+                {{ form.version_right }}
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if result %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <span>🔀 对比结果：</span>
+            <strong>{{ result.standard_type_name }}</strong>
+        </div>
+        <small class="text-muted">
+            左侧: <code>{{ result.left.id }} / {{ result.left.version }}</code>
+            &nbsp;&nbsp;↔&nbsp;&nbsp;
+            右侧: <code>{{ result.right.id }} / {{ result.right.version }}</code>
+        </small>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="p-3 rounded" style="background-color: rgba(220,53,69,0.05); border: 1px solid rgba(220,53,69,0.15);">
+                    <div class="text-danger fw-semibold mb-1">📌 左侧版本</div>
+                    <div class="fw-semibold">{{ result.left.name }}</div>
+                    <small class="text-muted">版本: {{ result.left.version }}</small>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="p-3 rounded" style="background-color: rgba(25,135,84,0.05); border: 1px solid rgba(25,135,84,0.15);">
+                    <div class="text-success fw-semibold mb-1">📌 右侧版本</div>
+                    <div class="fw-semibold">{{ result.right.name }}</div>
+                    <small class="text-muted">版本: {{ result.right.version }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">字段</th>
+                        <th style="width: 30%;">左侧 (变更前)</th>
+                        <th style="width: 30%;">右侧 (变更后)</th>
+                        <th style="width: 15%;">状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in result.diffs %}
+                    <tr class="diff-row {% if d.changed %}changed{% endif %}">
+                        <td><strong>{{ d.field }}</strong></td>
+                        <td>
+                            {% if d.changed %}<span class="diff-before">{% endif %}
+                            {% if d.left %}{{ d.left|linebreaksbr }}{% else %}<span class="text-muted">—</span>{% endif %}
+                            {% if d.changed %}</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if d.changed %}<span class="diff-after">{% endif %}
+                            {% if d.right %}{{ d.right|linebreaksbr }}{% else %}<span class="text-muted">—</span>{% endif %}
+                            {% if d.changed %}</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if d.changed %}
+                            <span class="badge bg-warning text-dark">有变化</span>
+                            {% else %}
+                            <span class="badge bg-secondary">无变化</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if available_versions %}
+<div class="card">
+    <div class="card-header"><span>📚 同主记录可用版本</span></div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr><th>ID</th><th>版本号</th><th>状态</th><th>当前版本</th></tr>
+                </thead>
+                <tbody>
+                    {% for v in available_versions %}
+                    <tr>
+                        <td><code>{{ v.pk }}</code></td>
+                        <td><code>{{ v.version_code|default:"—" }}</code></td>
+                        <td>
+                            <span class="badge vc-status-{{ v.version_status }}">
+                                {% for val, lbl in standard_types.processing_template.model.VERSION_STATUS_CHOICES %}
+                                    {% if val == v.version_status %}{{ lbl }}{% endif %}
+                                {% endfor %}
+                            </span>
+                        </td>
+                        <td>{% if v.is_current %}<span class="badge bg-success">是</span>{% else %}—{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

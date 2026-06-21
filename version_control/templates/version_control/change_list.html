@@ -1,0 +1,128 @@
+{% extends 'version_control/base.html' %}
+
+{% block page_title %}变更申请列表{% endblock %}
+{% block header_title %}工艺变更申请管理{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active" aria-current="page">变更申请</li>
+{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'version_control:change_create' %}" class="btn btn-primary">
+    <span>+</span> 新建申请
+</a>
+{% endblock %}
+
+{% block page_content %}
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small">标准类型</label>
+                <select class="form-select" name="standard_type">
+                    <option value="">全部类型</option>
+                    {% for key, info in standard_types.items %}
+                    <option value="{{ key }}" {% if current_standard_type == key %}selected{% endif %}>
+                        {{ info.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">变更类型</label>
+                <select class="form-select" name="change_type">
+                    <option value="">全部</option>
+                    {% for val, lbl in change_types %}
+                    <option value="{{ val }}" {% if current_change_type == val %}selected{% endif %}>
+                        {{ lbl }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">申请状态</label>
+                <select class="form-select" name="status">
+                    <option value="">全部状态</option>
+                    {% for val, lbl in status_list %}
+                    <option value="{{ val }}" {% if current_status == val %}selected{% endif %}>
+                        {{ lbl }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small">关键词</label>
+                <input type="text" class="form-control" name="q" placeholder="编号/标题/原因" value="{{ keyword }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">🔍 查询</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>编号</th>
+                        <th>标题</th>
+                        <th>标准类型</th>
+                        <th>变更类型</th>
+                        <th>原版本</th>
+                        <th>申请人</th>
+                        <th>申请时间</th>
+                        <th>优先级</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in changes %}
+                    <tr>
+                        <td><code>{{ c.request_no }}</code></td>
+                        <td>{{ c.title|truncatechars:30 }}</td>
+                        <td><small>{{ c.get_standard_type_display }}</small></td>
+                        <td><span class="badge bg-secondary">{{ c.get_change_type_display }}</span></td>
+                        <td><small>{{ c.source_version_code|default:"—" }}</small></td>
+                        <td>{{ c.applicant }}</td>
+                        <td><small>{{ c.created_at|date:"Y-m-d H:i" }}</small></td>
+                        <td>
+                            <span class="badge vc-priority-{{ c.priority }}">{{ c.get_priority_display }}</span>
+                        </td>
+                        <td>
+                            <span class="badge vc-status-{{ c.status }}">{{ c.get_status_display }}</span>
+                        </td>
+                        <td>
+                            <a href="{% url 'version_control:change_detail' c.pk %}" class="btn btn-sm btn-outline-primary">详情</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="10" class="text-center text-muted py-5">暂无变更申请记录</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if is_paginated %}
+    <div class="card-footer">
+        <nav aria-label="分页">
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&standard_type={{ current_standard_type }}&change_type={{ current_change_type }}&status={{ current_status }}&q={{ keyword }}">上一页</a>
+                </li>
+                {% endif %}
+                <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&standard_type={{ current_standard_type }}&change_type={{ current_change_type }}&status={{ current_status }}&q={{ keyword }}">下一页</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

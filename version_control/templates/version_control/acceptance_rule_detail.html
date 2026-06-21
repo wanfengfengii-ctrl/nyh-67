@@ -1,0 +1,54 @@
+{% extends 'version_control/base.html' %}
+
+{% block page_title %}验收规则详情{% endblock %}
+{% block header_title %}验收规则 — 详情{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'version_control:acceptance_rule_list' %}" class="text-decoration-none">验收规则</a></li>
+<li class="breadcrumb-item active" aria-current="page">#{{ object.pk }}</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <span>📋 基本信息</span>
+            <span class="badge vc-status-{{ object.version_status }} ms-2">{{ object.get_version_status_display }}</span>
+            {% if object.is_current %}<span class="badge bg-success ms-1">当前版本</span>{% endif %}
+        </div>
+        <div>
+            <a href="{% url 'version_control:acceptance_rule_update' object.pk %}" class="btn btn-sm btn-outline-primary">编辑</a>
+            <a href="{% url 'version_control:change_create' %}?standard_type=acceptance_rule&source_standard_id={{ object.pk }}&source_version_code={{ object.version_code }}" class="btn btn-sm btn-outline-warning">📝 申请变更</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3"><small class="text-muted d-block">版本号</small><code>{{ object.version_code|default:"—" }}</code></div>
+            <div class="col-md-3"><small class="text-muted d-block">主记录ID</small>{{ object.master_id|default:"—" }}</div>
+            <div class="col-md-3"><small class="text-muted d-block">规则类型</small>{{ object.get_rule_type_display }}</div>
+            <div class="col-md-3"><small class="text-muted d-block">综合评分权重</small>{{ object.weight_in_comprehensive|default:"—" }}</div>
+            <div class="col-md-12"><small class="text-muted d-block">规则名称</small><strong>{{ object.standard_name }}</strong></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header"><span>📏 阈值设置</span></div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr><th style="width:30%;">阈值最小值</th><td>{{ object.threshold_min|default:"未设置" }}</td></tr>
+                    <tr><th>阈值最大值</th><td>{{ object.threshold_max|default:"未设置" }}</td></tr>
+                    <tr><th>适用条件</th><td>{{ object.apply_condition|default:"—" }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header"><span>📝 规则描述</span></div>
+            <div class="card-body"><pre class="mb-0 bg-light p-3 rounded">{{ object.rule_description|default:"—" }}</pre></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

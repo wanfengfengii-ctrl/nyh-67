@@ -1,0 +1,61 @@
+{% extends 'version_control/base.html' %}
+
+{% block page_title %}设备操作要求详情{% endblock %}
+{% block header_title %}设备操作要求 — 详情{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'version_control:equipment_op_list' %}" class="text-decoration-none">设备操作</a></li>
+<li class="breadcrumb-item active" aria-current="page">#{{ object.pk }}</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <span>📋 基本信息</span>
+            <span class="badge vc-status-{{ object.version_status }} ms-2">{{ object.get_version_status_display }}</span>
+            {% if object.is_current %}<span class="badge bg-success ms-1">当前版本</span>{% endif %}
+        </div>
+        <div>
+            <a href="{% url 'version_control:equipment_op_update' object.pk %}" class="btn btn-sm btn-outline-primary">编辑</a>
+            <a href="{% url 'version_control:change_create' %}?standard_type=equipment_op&source_standard_id={{ object.pk }}&source_version_code={{ object.version_code }}" class="btn btn-sm btn-outline-warning">📝 申请变更</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3"><small class="text-muted d-block">版本号</small><code>{{ object.version_code|default:"—" }}</code></div>
+            <div class="col-md-3"><small class="text-muted d-block">主记录ID</small>{{ object.master_id|default:"—" }}</div>
+            <div class="col-md-3"><small class="text-muted d-block">设备类型</small>{{ object.equipment_type|default:"—" }}</div>
+            <div class="col-md-3"><small class="text-muted d-block">设备</small>{{ object.equipment_name|default:"—" }}</div>
+            <div class="col-md-4"><small class="text-muted d-block">操作阶段</small>{{ object.get_operation_stage_display }}</div>
+            <div class="col-md-4"><small class="text-muted d-block">参数严重度</small><span class="badge vc-priority-{{ object.param_severity }}">{{ object.get_param_severity_display }}</span></div>
+            <div class="col-md-4"><small class="text-muted d-block">创建人/时间</small><small>{{ object.version_created_by|default:"—" }} / {{ object.version_created_at|date:"Y-m-d H:i" }}</small></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header"><span>📝 操作步骤</span></div>
+            <div class="card-body"><pre class="mb-0 bg-light p-3 rounded">{{ object.operation_steps|default:"—" }}</pre></div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header"><span>🔧 关键参数</span></div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr><th style="width:30%;">参数名</th><td>{{ object.key_param_name|default:"—" }}</td></tr>
+                    <tr><th>最小值</th><td>{{ object.key_param_min|default:"—" }}</td></tr>
+                    <tr><th>最大值</th><td>{{ object.key_param_max|default:"—" }}</td></tr>
+                    <tr><th>单位</th><td>{{ object.key_param_unit|default:"—" }}</td></tr>
+                </table>
+            </div>
+        </div>
+        <div class="card mb-4">
+            <div class="card-header"><span>⚠️ 安全要求</span></div>
+            <div class="card-body"><pre class="mb-0 bg-light p-3 rounded">{{ object.safety_requirements|default:"—" }}</pre></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

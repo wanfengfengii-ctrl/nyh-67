@@ -22,4 +22,5 @@ urlpatterns = [
     path('', include('herbapp.urls')),
     path('processing/', include('processing.urls')),
     path('traceability/', include('traceability.urls')),
+    path('version-control/', include('version_control.urls')),
 ]

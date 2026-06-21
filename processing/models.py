@@ -6,6 +6,18 @@ from herbapp.models import HerbBatch, ProcessingRound
 
 
 class EnvironmentStandard(models.Model):
+    VERSION_STATUS_DRAFT = 'draft'
+    VERSION_STATUS_PENDING = 'pending'
+    VERSION_STATUS_APPROVED = 'approved'
+    VERSION_STATUS_OBSOLETE = 'obsolete'
+
+    VERSION_STATUS_CHOICES = [
+        (VERSION_STATUS_DRAFT, '草稿'),
+        (VERSION_STATUS_PENDING, '待审批'),
+        (VERSION_STATUS_APPROVED, '已批准'),
+        (VERSION_STATUS_OBSOLETE, '已废弃'),
+    ]
+
     PARAM_TYPE_TEMPERATURE = 'temperature'
     PARAM_TYPE_HUMIDITY = 'humidity'
 
@@ -34,6 +46,19 @@ class EnvironmentStandard(models.Model):
     is_active = models.BooleanField('是否启用', default=True)
     created_at = models.DateTimeField('创建时间', auto_now_add=True)
 
+    version_code = models.CharField('版本号', max_length=30, blank=True, null=True)
+    version_major = models.PositiveIntegerField('主版本号', default=1)
+    version_minor = models.PositiveIntegerField('次版本号', default=0)
+    version_status = models.CharField(
+        '版本状态', max_length=20, choices=VERSION_STATUS_CHOICES,
+        default=VERSION_STATUS_APPROVED
+    )
+    master_id = models.PositiveIntegerField('主记录ID', blank=True, null=True)
+    is_current = models.BooleanField('是否当前版本', default=True)
+    version_remark = models.TextField('版本说明', blank=True, null=True)
+    version_created_at = models.DateTimeField('版本创建时间', blank=True, null=True)
+    version_created_by = models.CharField('版本创建人', max_length=50, blank=True, null=True)
+
     class Meta:
         verbose_name = '环境参数标准'
         verbose_name_plural = verbose_name
@@ -41,7 +66,8 @@ class EnvironmentStandard(models.Model):
 
     def __str__(self):
         stage_display = dict(self.STAGE_CHOICES).get(self.stage, '')
-        return f'{self.herb_name} - {self.get_param_type_display()}({stage_display})'
+        version = f' [{self.version_code}]' if self.version_code else ''
+        return f'{self.herb_name} - {self.get_param_type_display()}({stage_display}){version}'
 
     def clean(self):
         errors = {}
@@ -52,8 +78,37 @@ class EnvironmentStandard(models.Model):
             self.unit = '°C'
         if self.param_type == self.PARAM_TYPE_HUMIDITY and not self.unit:
             self.unit = '%RH'
+        if not self.version_code:
+            self.version_code = f'V{self.version_major}.{self.version_minor}'
         if errors:
             raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        if not self.version_code:
+            self.version_code = f'V{self.version_major}.{self.version_minor}'
+        if not self.version_created_at:
+            self.version_created_at = self.created_at or timezone.now()
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_key_fields(cls):
+        return [
+            'herb_name', 'param_type', 'stage', 'min_value', 'max_value', 'unit', 'description',
+        ]
+
+    def make_version_snapshot(self):
+        return {
+            'herb_name': self.herb_name,
+            'param_type': self.param_type,
+            'stage': self.stage,
+            'min_value': str(self.min_value),
+            'max_value': str(self.max_value),
+            'unit': self.unit,
+            'description': self.description,
+            'version_code': self.version_code,
+            'version_major': self.version_major,
+            'version_minor': self.version_minor,
+        }
 
     def check_value(self, value):
         if value is None:

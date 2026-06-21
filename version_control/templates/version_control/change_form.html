@@ -1,0 +1,95 @@
+{% extends 'version_control/base.html' %}
+
+{% block page_title %}新建变更申请{% endblock %}
+{% block header_title %}创建工艺变更申请{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'version_control:change_list' %}" class="text-decoration-none">变更申请</a></li>
+<li class="breadcrumb-item active" aria-current="page">新建</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <span>📝 填写变更申请信息</span>
+            </div>
+            <div class="card-body">
+                <form method="post" class="row g-3">
+                    {% csrf_token %}
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">标准类型 *</label>
+                        {{ form.standard_type }}
+                        {% if form.standard_type.errors %}
+                        <div class="text-danger small">{{ form.standard_type.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">变更类型 *</label>
+                        {{ form.change_type }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">优先级</label>
+                        {{ form.priority }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">原标准ID</label>
+                        {{ form.source_standard_id }}
+                        <small class="text-muted">修改/废弃标准时必填</small>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">原版本号</label>
+                        {{ form.source_version_code }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold">变更标题 *</label>
+                        {{ form.title }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">申请人 *</label>
+                        {{ form.applicant }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">申请部门</label>
+                        {{ form.department }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold">变更原因 *</label>
+                        {{ form.change_reason }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold">影响范围 *</label>
+                        {{ form.impact_scope }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold">预期效果 *</label>
+                        {{ form.expected_effect }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">风险评估</label>
+                        {{ form.risk_assessment }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">回退方案</label>
+                        {{ form.rollback_plan }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">生效日期</label>
+                        {{ form.effective_date }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">旧版本废弃日期</label>
+                        {{ form.obsolescence_date }}
+                    </div>
+                    <div class="col-12 pt-3 border-top">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'version_control:change_list' %}" class="btn btn-outline-secondary">取消</a>
+                            <button type="submit" class="btn btn-primary">💾 保存为草稿</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

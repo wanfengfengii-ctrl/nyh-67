@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'herbapp',
     'processing',
     'traceability',
+    'version_control',
 ]
 
 MIDDLEWARE = [

@@ -1,0 +1,69 @@
+{% extends 'version_control/base.html' %}
+
+{% block page_title %}{% if object %}编辑{% else %}新建{% endif %}工艺快照{% endblock %}
+{% block header_title %}{% if object %}编辑{% else %}新建{% endif %}工艺版本综合快照{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'version_control:snapshot_list' %}" class="text-decoration-none">工艺快照</a></li>
+<li class="breadcrumb-item active" aria-current="page">{% if object %}编辑{% else %}新建{% endif %}</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" class="row g-3">
+                    {% csrf_token %}
+                    <div class="col-md-6">
+                        <label class="form-label small">快照名称</label>
+                        {{ form.snapshot_name }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">关联变更申请</label>
+                        {{ form.change_request }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">工艺模板ID</label>
+                        {{ form.template_standard_id }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">模板版本号</label>
+                        {{ form.template_version_code }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">创建人</label>
+                        {{ form.created_by }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small">备注</label>
+                        {{ form.remark }}
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small">炮制模板快照 (JSON)</label>
+                        {{ form.template_snapshot }}
+                        <small class="text-muted">支持粘贴JSON对象，包含template、round_standards等</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">环境参数快照 (JSON)</label>
+                        {{ form.env_snapshot }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">设备操作快照 (JSON)</label>
+                        {{ form.equipment_op_snapshot }}
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small">验收规则快照 (JSON)</label>
+                        {{ form.acceptance_snapshot }}
+                    </div>
+                    <div class="col-12 pt-3 border-top">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'version_control:snapshot_list' %}" class="btn btn-outline-secondary">取消</a>
+                            <button type="submit" class="btn btn-primary">💾 保存</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

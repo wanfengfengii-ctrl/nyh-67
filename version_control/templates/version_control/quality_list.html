@@ -1,0 +1,78 @@
+{% extends 'version_control/base.html' %}
+
+{% block page_title %}质量波动跟踪分析{% endblock %}
+{% block header_title %}质量波动跟踪分析{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item active" aria-current="page">质量分析</li>
+{% endblock %}
+
+{% block page_content %}
+<div class="row mb-4">
+    <div class="col">
+        <a href="{% url 'version_control:quality_create' %}" class="btn btn-primary">➕ 新建质量分析</a>
+    </div>
+</div>
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th><th>分析名称</th><th>关联变更</th><th>药材</th>
+                        <th>变更前/后</th><th>整体趋势</th><th>稳定性</th>
+                        <th>状态</th><th>创建人</th><th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for obj in object_list %}
+                    <tr>
+                        <td>{{ obj.pk }}</td>
+                        <td>{{ obj.analysis_name|default:"—" }}</td>
+                        <td>
+                            {% if obj.change_request %}
+                            <a href="{% url 'version_control:change_detail' obj.change_request.pk %}" class="text-decoration-none">{{ obj.change_request.request_no }}</a>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>{{ obj.herb_name|default:"—" }}</td>
+                        <td>
+                            <small>
+                                {{ obj.before_start_date|date:"m-d" }}~{{ obj.before_end_date|date:"m-d" }}<br>
+                                → {{ obj.after_start_date|date:"m-d" }}~{{ obj.after_end_date|date:"m-d" }}
+                            </small>
+                        </td>
+                        <td>
+                            {% if obj.overall_trend %}
+                            <span class="badge trend-{{ obj.overall_trend }}">{{ obj.get_overall_trend_display }}</span>
+                            {% else %}<span class="text-muted">未运行</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if obj.stability_change %}
+                            <span class="badge trend-{{ obj.stability_change }}">{{ obj.get_stability_change_display }}</span>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>
+                            <span class="badge vc-status-{{ obj.status|default:'draft' }}">{{ obj.get_status_display|default:"草稿" }}</span>
+                        </td>
+                        <td>{{ obj.created_by|default:"—" }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'version_control:quality_detail' obj.pk %}" class="btn btn-outline-primary">详情</a>
+                                {% if not obj.overall_trend %}
+                                <a href="{% url 'version_control:quality_run' obj.pk %}" class="btn btn-outline-success">▶ 运行</a>
+                                {% endif %}
+                                {% if obj.overall_trend and obj.status != 'reviewed' %}
+                                <a href="{% url 'version_control:quality_review' obj.pk %}" class="btn btn-outline-info">复核</a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="10" class="text-center text-muted py-4">暂无质量分析记录</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% include 'version_control/includes/_pagination.html' %}
+{% endblock %}

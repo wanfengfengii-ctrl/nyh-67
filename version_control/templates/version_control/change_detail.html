@@ -1,0 +1,414 @@
+{% extends 'version_control/base.html' %}
+
+{% block page_title %}{{ change.request_no }} - 变更详情{% endblock %}
+{% block header_title %}变更申请 · {{ change.request_no }}{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'version_control:change_list' %}" class="text-decoration-none">变更申请</a></li>
+<li class="breadcrumb-item active" aria-current="page">{{ change.request_no }}</li>
+{% endblock %}
+
+{% block header_actions %}
+{% if change.status == 'draft' %}
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#submitModal">📤 提交审核</button>
+<button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#cancelModal">撤销</button>
+{% endif %}
+{% if change.status == 'submitted' or change.status == 'reviewing' %}
+<button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#cancelModal">撤销申请</button>
+{% endif %}
+{% if change.status == 'approved' %}
+<button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#publishModal">🚀 发布新版本</button>
+{% endif %}
+<a href="{% url 'version_control:change_list' %}" class="btn btn-outline-secondary">← 返回列表</a>
+{% endblock %}
+
+{% block page_content %}
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>📝 {{ change.title }}</span>
+                <div>
+                    <span class="badge vc-status-{{ change.status }} me-1">{{ change.get_status_display }}</span>
+                    <span class="badge vc-priority-{{ change.priority }}">{{ change.get_priority_display }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">申请编号</small>
+                        <strong>{{ change.request_no }}</strong>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">标准类型</small>
+                        <strong>{{ change.get_standard_type_display }}</strong>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">变更类型</small>
+                        <strong>{{ change.get_change_type_display }}</strong>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">申请人/部门</small>
+                        <strong>{{ change.applicant }} / {{ change.department|default:"—" }}</strong>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">申请时间</small>
+                        <strong>{{ change.requested_at|date:"Y-m-d H:i" }}</strong>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">生效日期</small>
+                        <strong>{{ change.effective_date|default:"—" }}</strong>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted d-block">原标准ID / 版本</small>
+                        <strong>
+                            {% if change.source_standard_id %}
+                                #{{ change.source_standard_id }} / {{ change.source_version_code|default:"—" }}
+                                {% if source_object %}
+                                    <br><small class="text-muted">{{ source_object }}</small>
+                                {% endif %}
+                            {% else %}—{% endif %}
+                        </strong>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted d-block">发布后新标准ID</small>
+                        <strong>
+                            {% if change.target_standard_id %}
+                                #{{ change.target_standard_id }}
+                                {% if target_object %}
+                                    <br><small class="text-muted">{{ target_object }}</small>
+                                {% endif %}
+                            {% else %}<span class="text-muted">尚未发布</span>{% endif %}
+                        </strong>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">🔍 变更原因</label>
+                    <div class="p-3 rounded" style="background-color: rgba(139,69,19,0.05);">
+                        {{ change.change_reason|linebreaksbr }}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">🌐 影响范围</label>
+                    <div class="p-3 rounded" style="background-color: rgba(139,69,19,0.05);">
+                        {{ change.impact_scope|linebreaksbr }}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">🎯 预期效果</label>
+                    <div class="p-3 rounded" style="background-color: rgba(46,139,87,0.05);">
+                        {{ change.expected_effect|linebreaksbr }}
+                    </div>
+                </div>
+                {% if change.risk_assessment %}
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">⚠️ 风险评估</label>
+                    <div class="p-3 rounded" style="background-color: rgba(255,193,7,0.1);">
+                        {{ change.risk_assessment|linebreaksbr }}
+                    </div>
+                </div>
+                {% endif %}
+                {% if change.rollback_plan %}
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">🔄 回退方案</label>
+                    <div class="p-3 rounded" style="background-color: rgba(13,110,253,0.05);">
+                        {{ change.rollback_plan|linebreaksbr }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <span>🔀 变更内容对比</span>
+                <small class="text-muted ms-2">（共 {{ computed_diffs|length }} 处差异）</small>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%;">字段</th>
+                                <th style="width: 35%;">变更前</th>
+                                <th style="width: 35%;">变更后</th>
+                                <th>差异</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in computed_diffs %}
+                            <tr class="diff-row {% if d.before != d.after %}changed{% endif %}">
+                                <td><strong>{{ d.field_label|default:d.field }}</strong></td>
+                                <td>
+                                    {% if d.before != d.after %}<span class="diff-before">{% endif %}
+                                    {% if d.before %}
+                                        {{ d.before|linebreaksbr }}
+                                    {% else %}<span class="text-muted">—</span>{% endif %}
+                                    {% if d.before != d.after %}</span>{% endif %}
+                                </td>
+                                <td>
+                                    {% if d.before != d.after %}<span class="diff-after">{% endif %}
+                                    {% if d.after %}
+                                        {{ d.after|linebreaksbr }}
+                                    {% else %}<span class="text-muted">—</span>{% endif %}
+                                    {% if d.before != d.after %}</span>{% endif %}
+                                </td>
+                                <td>
+                                    {% if d.before != d.after %}
+                                        <span class="badge bg-warning text-dark">变更</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">不变</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center text-muted py-4">
+                                请在 <strong>变更后内容快照</strong> 中填写新标准的完整内容以生成对比
+                            </td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {% if quality_analyses %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <span>📈 关联质量波动分析</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for qa in quality_analyses %}
+                    <a href="{% url 'version_control:quality_detail' qa.pk %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-semibold">{{ qa.title }}</div>
+                                <small class="text-muted">{{ qa.analysis_no }} · {{ qa.analyzed_at|date:"Y-m-d"|default:"待分析" }}</small>
+                            </div>
+                            <div>
+                                <span class="trend-{{ qa.overall_trend }} me-2">{{ qa.get_overall_trend_display }}</span>
+                                <span class="badge bg-secondary">{{ qa.get_status_display }}</span>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <span>⏱️ 审核流程</span>
+            </div>
+            <div class="card-body">
+                {% if change.status == 'submitted' or change.status == 'reviewing' %}
+                <div class="mb-3 p-3 rounded" style="background-color: rgba(13,110,253,0.08); border: 1px solid rgba(13,110,253,0.2);">
+                    <form method="post" action="{% url 'version_control:change_review' change.pk %}">
+                        {% csrf_token %}
+                        <div class="mb-2">
+                            {{ review_form.action.label_tag }}
+                            {{ review_form.action }}
+                        </div>
+                        <div class="mb-2">
+                            {{ review_form.reviewer.label_tag }}
+                            {{ review_form.reviewer }}
+                        </div>
+                        <div class="mb-2">
+                            {{ review_form.remark.label_tag }}
+                            {{ review_form.remark }}
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">提交审核意见</button>
+                    </form>
+                </div>
+                {% endif %}
+
+                <div class="approval-timeline">
+                    {% for ar in approval_records %}
+                    <div class="approval-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-semibold">{{ ar.get_action_display }}</div>
+                                <small class="text-muted">
+                                    {{ ar.reviewer }} · {{ ar.reviewed_at|date:"Y-m-d H:i" }}
+                                </small>
+                            </div>
+                            {% if ar.previous_status and ar.new_status %}
+                            <small class="text-muted">
+                                <span class="badge vc-status-{{ ar.previous_status }}">{{ ar.previous_status }}</span>
+                                → <span class="badge vc-status-{{ ar.new_status }}">{{ ar.new_status }}</span>
+                            </small>
+                            {% endif %}
+                        </div>
+                        {% if ar.remark %}
+                        <div class="mt-1 p-2 small rounded" style="background-color: rgba(139,69,19,0.05);">
+                            {{ ar.remark|linebreaksbr }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="text-muted small">暂无审核记录</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {% if change.approval_remark %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <span>✅ 最终审核意见</span>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <small class="text-muted">审核人：</small>
+                    <strong>{{ change.approver|default:"—" }}</strong>
+                    <span class="text-muted ms-2">{{ change.approved_at|date:"Y-m-d H:i"|default:"" }}</span>
+                </div>
+                <div class="p-3 rounded" style="background-color: rgba(46,139,87,0.05);">
+                    {{ change.approval_remark|linebreaksbr|default:"—" }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if change.publish_remark %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <span>🚀 发布信息</span>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <small class="text-muted">发布人：</small>
+                    <strong>{{ change.publisher|default:"—" }}</strong>
+                    <span class="text-muted ms-2">{{ change.published_at|date:"Y-m-d H:i"|default:"" }}</span>
+                </div>
+                <div class="p-3 rounded" style="background-color: rgba(46,139,87,0.05);">
+                    {{ change.publish_remark|linebreaksbr|default:"—" }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if change.status == 'draft' %}
+<div class="modal fade" id="submitModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="post" action="{% url 'version_control:change_submit' change.pk %}" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title font-serif">确认提交审核</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>提交后变更申请将进入审核流程，确认要提交吗？</p>
+                <div class="mb-2">
+                    <label class="form-label small">申请人</label>
+                    <input type="text" name="applicant" class="form-control" value="{{ change.applicant }}">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="submit" class="btn btn-primary">确认提交</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="post" action="{% url 'version_control:change_cancel' change.pk %}" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title font-serif">撤销变更申请</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <label class="form-label small">撤销原因</label>
+                    <textarea name="remark" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">操作人</label>
+                    <input type="text" name="applicant" class="form-control" value="{{ change.applicant }}">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="submit" class="btn btn-danger">确认撤销</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+{% if change.status == 'approved' %}
+<div class="modal fade" id="publishModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <form method="post" action="{% url 'version_control:change_publish' change.pk %}" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title font-serif">发布新版本</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <strong>发布前请确认：</strong> 请在下方完整填写 <code>change_content_after</code> 变更后内容。
+                    若您尚未填写，请先在后台或通过接口补充变更后快照再发布。
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small">发布人</label>
+                        {{ publish_form.publisher }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">生效日期</label>
+                        {{ publish_form.effective_date }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small">发布备注</label>
+                        {{ publish_form.publish_remark }}
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="submit" class="btn btn-success">🚀 确认发布</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+{% if change.status == 'submitted' or change.status == 'reviewing' %}
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="post" action="{% url 'version_control:change_cancel' change.pk %}" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title font-serif">撤销变更申请</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <label class="form-label small">撤销原因</label>
+                    <textarea name="remark" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">操作人</label>
+                    <input type="text" name="applicant" class="form-control" value="{{ change.applicant }}">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="submit" class="btn btn-danger">确认撤销</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
