@@ -1,0 +1,232 @@
+{% extends 'herbapp/base.html' %}
+
+{% block title %}{{ batch.batch_no }} - 批次详情{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="{% url 'herbapp:batch_list' %}" class="btn btn-outline-secondary me-3">← 返回列表</a>
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">
+        🌿 {{ batch.batch_no }} - {{ batch.herb_name }}
+    </h2>
+    <span class="badge badge-status-{{ batch.status }} ms-3" style="font-size: 0.9rem;">{{ batch.get_status_display }}</span>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ batch.initial_weight }}g</div>
+            <div class="stat-label">初始重量</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ batch.get_current_round_no }}/{{ batch.required_rounds }}</div>
+            <div class="stat-label">炮制进度</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ batch.get_weight_loss_percent }}%</div>
+            <div class="stat-label">累计损耗</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ batch.created_at|date:"m-d" }}</div>
+            <div class="stat-label">创建日期</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">📊 重量损耗曲线</div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="weightChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">🎨 色泽评级变化</div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="colorChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>📜 炮制轮次记录</span>
+        <div>
+            {% if can_add_round %}
+            <a href="{% url 'herbapp:round_create' batch.pk %}" class="btn btn-success btn-sm">+ 记录第{{ next_round_no }}轮</a>
+            {% elif can_accept %}
+            <a href="{% url 'herbapp:acceptance' batch.pk %}" class="btn btn-primary btn-sm">✓ 提交验收</a>
+            {% elif has_accepted %}
+            <span class="badge bg-success fs-6">已完成验收</span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-body">
+        {% if rounds %}
+        <div class="row g-3">
+            {% for round in rounds %}
+            <div class="col-md-6">
+                <div class="timeline-round py-2">
+                    <div class="card border-0 bg-light">
+                        <div class="card-body py-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="font-serif mb-0" style="color: var(--ochre);">
+                                    第{{ round.round_no }}轮
+                                </h6>
+                                <span class="badge badge-color-{{ round.color_rating }}">{{ round.get_color_rating_display }}</span>
+                            </div>
+                            <div class="row small text-muted g-2">
+                                <div class="col-6">
+                                    <strong>蒸制：</strong>{{ round.steam_time }}分钟
+                                </div>
+                                <div class="col-6">
+                                    <strong>晾晒：</strong>{{ round.dry_duration }}小时
+                                </div>
+                                <div class="col-6">
+                                    <strong>当前重量：</strong>{{ round.weight }}g
+                                </div>
+                                <div class="col-6">
+                                    <strong>记录时间：</strong>{{ round.record_time|date:"m-d H:i" }}
+                                </div>
+                                {% if round.handling_opinion %}
+                                <div class="col-12 mt-2">
+                                    <div class="alert alert-warning py-2 px-3 mb-0 small">
+                                        <strong>处理意见：</strong>{{ round.handling_opinion }}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <p>尚未记录任何炮制轮次</p>
+            {% if can_add_round %}
+            <a href="{% url 'herbapp:round_create' batch.pk %}" class="btn btn-success">开始记录第1轮</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if batch.remark %}
+<div class="card mb-4">
+    <div class="card-header">📝 备注</div>
+    <div class="card-body">
+        <p class="mb-0">{{ batch.remark }}</p>
+    </div>
+</div>
+{% endif %}
+
+{% if batch.acceptance %}
+<div class="card">
+    <div class="card-header bg-success text-white">
+        ✅ 验收结果
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>验收结果：</strong>
+                    {% if batch.acceptance.result == 'pass' %}<span class="badge bg-success">合格</span>
+                    {% elif batch.acceptance.result == 'fail' %}<span class="badge bg-danger">不合格</span>
+                    {% else %}<span class="badge bg-warning">返工</span>{% endif %}
+                </p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>验收时间：</strong>{{ batch.acceptance.accepted_at|date:"Y-m-d H:i" }}</p>
+            </div>
+            <div class="col-12">
+                <p><strong>验收备注：</strong>{{ batch.acceptance.remark }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+    fetch("{% url 'herbapp:batch_chart' batch.pk %}")
+        .then(r => r.json())
+        .then(data => {
+            const weightCtx = document.getElementById('weightChart').getContext('2d');
+            new Chart(weightCtx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: '重量(g)',
+                        data: data.weight_data,
+                        borderColor: '#8B4513',
+                        backgroundColor: 'rgba(139,69,19,0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#8B4513',
+                        pointRadius: 5,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: false, title: { display: true, text: '重量(g)' } },
+                        x: { title: { display: true, text: '炮制阶段' } }
+                    }
+                }
+            });
+
+            const colorCtx = document.getElementById('colorChart').getContext('2d');
+            new Chart(colorCtx, {
+                type: 'bar',
+                data: {
+                    labels: data.color_data.map(d => '第' + d.round + '轮'),
+                    datasets: [{
+                        label: '色泽评级',
+                        data: data.color_data.map(d => d.value),
+                        backgroundColor: data.color_data.map(d => d.abnormal ? '#B22222' : '#2E8B57'),
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 5,
+                            ticks: {
+                                stepSize: 1,
+                                callback: function(v) {
+                                    return ['', '异常', '中', '良', '优', ''][v] || '';
+                                }
+                            },
+                            title: { display: true, text: '评级' }
+                        },
+                        x: { title: { display: true, text: '轮次' } }
+                    }
+                }
+            });
+        });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends 'herbapp/base.html' %}
+
+{% block title %}批次列表 - 传统药材炮制管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">📋 药材批次管理</h2>
+    <a href="{% url 'herbapp:batch_create' %}" class="btn btn-primary">
+        + 新建批次
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">关键字搜索</label>
+                <input type="text" name="q" class="form-control" placeholder="输入批次编号或药材名称" value="{{ q }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">状态筛选</label>
+                <select name="status" class="form-select">
+                    <option value="">全部状态</option>
+                    {% for key, label in status_choices %}
+                    <option value="{{ key }}" {% if status == key %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100">🔍 搜索</button>
+            </div>
+            <div class="col-md-1">
+                <a href="{% url 'herbapp:batch_list' %}" class="btn btn-secondary w-100">重置</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>批次编号</th>
+                        <th>药材名称</th>
+                        <th>初始重量</th>
+                        <th>规定轮次</th>
+                        <th>当前进度</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for batch in batches %}
+                    <tr>
+                        <td class="font-serif"><strong>{{ batch.batch_no }}</strong></td>
+                        <td>{{ batch.herb_name }}</td>
+                        <td>{{ batch.initial_weight }} g</td>
+                        <td>{{ batch.required_rounds }} 轮</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress" style="width: 100px; height: 8px;">
+                                    <div class="progress-bar" style="width: {% widthratio batch.get_current_round_no batch.required_rounds 100 %}%; background-color: var(--herb-green);"></div>
+                                </div>
+                                <small class="text-muted">{{ batch.get_current_round_no }}/{{ batch.required_rounds }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge badge-status-{{ batch.status }}">{{ batch.get_status_display }}</span>
+                        </td>
+                        <td><small>{{ batch.created_at|date:"Y-m-d H:i" }}</small></td>
+                        <td>
+                            <a href="{% url 'herbapp:batch_detail' batch.pk %}" class="btn btn-sm btn-outline-primary">查看详情</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <p style="font-size: 1.2rem;">暂无批次数据</p>
+                            <a href="{% url 'herbapp:batch_create' %}" class="btn btn-primary mt-2">创建第一个批次</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if is_paginated %}
+    <div class="card-footer">
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?q={{ q }}&status={{ status }}&page={{ page_obj.previous_page_number }}">上一页</a></li>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                    <a class="page-link" href="?q={{ q }}&status={{ status }}&page={{ num }}">{{ num }}</a>
+                </li>
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?q={{ q }}&status={{ status }}&page={{ page_obj.next_page_number }}">下一页</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

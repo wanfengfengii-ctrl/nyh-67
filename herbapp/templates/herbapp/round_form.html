@@ -1,0 +1,66 @@
+{% extends 'herbapp/base.html' %}
+
+{% block title %}记录炮制轮次 - {{ batch.batch_no }}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="{% url 'herbapp:batch_detail' batch.pk %}" class="btn btn-outline-secondary me-3">← 返回详情</a>
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">
+        📝 记录第{{ round_no }}轮炮制数据
+    </h2>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                批次信息参考
+            </div>
+            <div class="card-body">
+                <div class="row text-muted">
+                    <div class="col-md-4"><strong>批次编号：</strong>{{ batch.batch_no }}</div>
+                    <div class="col-md-4"><strong>药材名称：</strong>{{ batch.herb_name }}</div>
+                    <div class="col-md-4"><strong>初始重量：</strong>{{ batch.initial_weight }}g</div>
+                    <div class="col-md-4"><strong>规定轮次：</strong>共{{ batch.required_rounds }}轮</div>
+                    <div class="col-md-4"><strong>当前轮次：</strong>第{{ round_no }}轮</div>
+                    <div class="col-md-4">
+                        <strong>重量上限：</strong>
+                        <span class="text-danger">≤ {{ batch.initial_weight }}g</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">炮制数据录入</div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            {{ field.label }}
+                            {% if field.name == 'handling_opinion' %}
+                            <small class="text-muted ms-2">（色泽评级异常时必填）</small>
+                            {% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                        {% endif %}
+                        {{ field.errors }}
+                    </div>
+                    {% endfor %}
+                    <div class="alert alert-info small">
+                        <strong>验证规则：</strong>蒸制时间和晾晒时长必须大于0；当前重量不能超过初始重量{{ batch.initial_weight }}g；色泽评级为"异常"时必须填写处理意见。
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="{% url 'herbapp:batch_detail' batch.pk %}" class="btn btn-secondary">取消</a>
+                        <button type="submit" class="btn btn-primary">保存本轮记录</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

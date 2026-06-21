@@ -1,0 +1,39 @@
+{% extends 'herbapp/base.html' %}
+
+{% block title %}新建批次 - 传统药材炮制管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="{% url 'herbapp:batch_list' %}" class="btn btn-outline-secondary me-3">← 返回</a>
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">📝 新建药材批次</h2>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                批次基本信息
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                        {% endif %}
+                        {{ field.errors }}
+                    </div>
+                    {% endfor %}
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="{% url 'herbapp:batch_list' %}" class="btn btn-secondary">取消</a>
+                        <button type="submit" class="btn btn-primary">创建批次</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

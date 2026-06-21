@@ -1,0 +1,74 @@
+{% extends 'herbapp/base.html' %}
+
+{% block title %}质量验收 - {{ batch.batch_no }}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="{% url 'herbapp:batch_detail' batch.pk %}" class="btn btn-outline-secondary me-3">← 返回详情</a>
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">✅ 质量验收 - {{ batch.batch_no }}</h2>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">验收信息汇总</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <strong>药材名称：</strong>{{ batch.herb_name }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>规定轮次：</strong>{{ batch.required_rounds }}轮
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>初始重量：</strong>{{ batch.initial_weight }}g
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>已完成轮次：</strong>{{ batch.get_current_round_no }}轮
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>累计损耗率：</strong>
+                        <span class="text-warning">{{ batch.get_weight_loss_percent }}%</span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>当前状态：</strong>
+                        <span class="badge badge-status-{{ batch.status }}">{{ batch.get_status_display }}</span>
+                    </div>
+                </div>
+                <hr>
+                <div class="mt-3">
+                    <h6 class="font-serif mb-2">各轮色泽情况：</h6>
+                    {% for round in batch.rounds.all %}
+                    <span class="badge me-2 mb-1 badge-color-{{ round.color_rating }}">
+                        第{{ round.round_no }}轮：{{ round.get_color_rating_display }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">验收结论</div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                        {% endif %}
+                        {{ field.errors }}
+                    </div>
+                    {% endfor %}
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="{% url 'herbapp:batch_detail' batch.pk %}" class="btn btn-secondary">取消</a>
+                        <button type="submit" class="btn btn-primary">确认验收</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
