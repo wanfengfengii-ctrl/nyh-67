@@ -1,0 +1,188 @@
+{% extends 'processing/base.html' %}
+
+{% block page_title %}设备状态记录详情{% endblock %}
+
+{% block page_content %}
+<div class="d-flex align-items-center mb-4 flex-wrap gap-2">
+    <a href="{% url 'processing:equipment_status_list' %}" class="btn btn-outline-secondary me-2">← 返回列表</a>
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">
+        📋 设备状态记录详情
+    </h2>
+    {% if record.is_abnormal %}
+    <span class="badge bg-danger ms-2" style="font-size: 0.9rem;">⚠️ 异常</span>
+    {% else %}
+    <span class="badge bg-success ms-2" style="font-size: 0.9rem;">✓ 正常</span>
+    {% endif %}
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ record.record_time|date:"m-d" }}</div>
+            <div class="stat-label">记录日期</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ record.record_time|date:"H:i" }}</div>
+            <div class="stat-label">记录时间</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value" style="font-size: 1.4rem;">{{ record.equipment.equipment_name }}</div>
+            <div class="stat-label">设备名称</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">
+                {% if record.running_status == 'running' %}
+                <span class="text-success">运行中</span>
+                {% elif record.running_status == 'standby' %}
+                <span class="text-info">待机</span>
+                {% elif record.running_status == 'stopped' %}
+                <span class="text-secondary">停机</span>
+                {% else %}
+                <span class="text-danger">故障</span>
+                {% endif %}
+            </div>
+            <div class="stat-label">运行状态</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">📋 记录详情</div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tbody>
+                        <tr>
+                            <th style="width: 120px;">记录编号</th>
+                            <td class="font-serif"><strong>#{{ record.pk }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>所属批次</th>
+                            <td>
+                                <a href="{% url 'herbapp:batch_detail' record.batch.pk %}" class="text-decoration-none">
+                                    {{ record.batch.batch_no }} - {{ record.batch.herb_name }}
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>关联轮次</th>
+                            <td>{% if record.round_no %}第{{ record.round_no }}轮{% else %}-{% endif %}</td>
+                        </tr>
+                        <tr>
+                            <th>设备</th>
+                            <td>
+                                <a href="{% url 'processing:equipment_detail' record.equipment.pk %}" class="text-decoration-none">
+                                    {{ record.equipment.equipment_no }} - {{ record.equipment.equipment_name }}
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>设备类型</th>
+                            <td>{{ record.equipment.get_equipment_type_display }}</td>
+                        </tr>
+                        <tr>
+                            <th>记录时间</th>
+                            <td>{{ record.record_time|date:"Y-m-d H:i:s" }}</td>
+                        </tr>
+                        <tr>
+                            <th>运行状态</th>
+                            <td>{{ record.get_running_status_display }}</td>
+                        </tr>
+                        <tr>
+                            <th>操作人员</th>
+                            <td>{{ record.operator|default:"-" }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100 {% if record.is_abnormal %}border-danger{% endif %}">
+            <div class="card-header {% if record.is_abnormal %}bg-danger bg-opacity-10 text-danger{% endif %}">
+                {% if record.is_abnormal %}⚠️ 异常信息{% else %}📊 运行参数{% endif %}
+            </div>
+            <div class="card-body">
+                {% if record.operating_params %}
+                <div class="mb-4">
+                    <h6 class="font-serif mb-2" style="color: var(--ochre);">运行参数</h6>
+                    <div class="bg-light rounded p-3">
+                        <pre class="mb-0 small" style="white-space: pre-wrap; word-break: break-all;">{{ record.operating_params|pprint }}</pre>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if record.is_abnormal %}
+                    {% if record.abnormal_description %}
+                    <div class="mb-4">
+                        <h6 class="font-serif mb-2 text-danger">异常说明</h6>
+                        <div class="alert alert-danger py-3">
+                            {{ record.abnormal_description|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if record.handling_result %}
+                    <div class="mb-4">
+                        <h6 class="font-serif mb-2" style="color: var(--gold);">处理结果</h6>
+                        <div class="alert alert-warning py-3">
+                            {{ record.handling_result|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endif %}
+
+                {% if record.remark %}
+                <div class="mb-3">
+                    <h6 class="font-serif mb-2" style="color: var(--ochre);">备注</h6>
+                    <div class="p-3 bg-light rounded">
+                        {{ record.remark|linebreaks }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>🔗 关联信息</span>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <a href="{% url 'herbapp:batch_detail' record.batch.pk %}" class="text-decoration-none">
+                        <div class="stat-value" style="font-size: 1.2rem;">{{ record.batch.batch_no }}</div>
+                        <div class="stat-label">查看批次详情 →</div>
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <a href="{% url 'processing:equipment_detail' record.equipment.pk %}" class="text-decoration-none">
+                        <div class="stat-value" style="font-size: 1.2rem;">{{ record.equipment.equipment_no }}</div>
+                        <div class="stat-label">查看设备详情 →</div>
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <a href="{% url 'processing:equipment_status_list' %}?equipment={{ record.equipment.pk }}" class="text-decoration-none">
+                        <div class="stat-value" style="font-size: 1.2rem;">更多记录</div>
+                        <div class="stat-label">查看该设备全部记录 →</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,269 @@
+{% extends 'processing/base.html' %}
+
+{% block page_title %}{{ record.batch.batch_no }} - 晾晒区域记录详情{% endblock %}
+
+{% block page_content %}
+<div class="d-flex align-items-center mb-4 flex-wrap gap-2">
+    <a href="{% url 'processing:drying_record_list' %}" class="btn btn-outline-secondary me-2">← 返回列表</a>
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">
+        ☀️ 晾晒区域记录详情
+    </h2>
+    {% if record.is_abnormal %}
+    <span class="badge badge-color-abnormal ms-2" style="font-size: 0.9rem;">⚠️ 异常</span>
+    {% else %}
+    <span class="badge badge-color-excellent ms-2" style="font-size: 0.9rem;">✓ 正常</span>
+    {% endif %}
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>📋 基本信息</span>
+                <small class="text-muted">{{ record.record_time|date:"Y-m-d H:i:s" }}</small>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="stat-value" style="font-size: 1.2rem;">{{ record.batch.batch_no }}</div>
+                            <div class="stat-label">批次编号</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="stat-value" style="font-size: 1.2rem;">{{ record.batch.herb_name }}</div>
+                            <div class="stat-label">药材名称</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="stat-value" style="font-size: 1.2rem;">
+                                {% if record.round_no %}第{{ record.round_no }}轮{% else %}-{% endif %}
+                            </div>
+                            <div class="stat-label">关联轮次</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="stat-value" style="font-size: 1.2rem;">{{ record.get_area_type_display }}</div>
+                            <div class="stat-label">区域类型</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <label class="form-label fw-semibold small text-muted">区域名称</label>
+                    <p class="mb-0"><strong>{{ record.area_name }}</strong></p>
+                </div>
+                
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded {% if record.temperature and record.is_abnormal and 'temperature' in record.abnormal_details %}border border-danger bg-danger bg-opacity-10{% else %}" style="background: linear-gradient(135deg, rgba(139,69,19,0.05), rgba(46,139,87,0.05));{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-danger">🌡️ 温度</span>
+                                <small class="text-muted">°C</small>
+                            </div>
+                            <div class="font-monospace text-center" style="font-size: 2rem; font-weight: 700;">
+                                {% if record.temperature %}{{ record.temperature }}{% else %}<span class="text-muted">-</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded {% if record.humidity and record.is_abnormal and 'humidity' in record.abnormal_details %}border border-danger bg-danger bg-opacity-10{% else %}" style="background: linear-gradient(135deg, rgba(139,69,19,0.05), rgba(46,139,87,0.05));{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-primary">💧 湿度</span>
+                                <small class="text-muted">%RH</small>
+                            </div>
+                            <div class="font-monospace text-center" style="font-size: 2rem; font-weight: 700;">
+                                {% if record.humidity %}{{ record.humidity }}{% else %}<span class="text-muted">-</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded" style="background: linear-gradient(135deg, rgba(139,69,19,0.05), rgba(46,139,87,0.05));">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-warning">☀️ 光照强度</span>
+                                <small class="text-muted">Lux</small>
+                            </div>
+                            <div class="font-monospace text-center" style="font-size: 1.5rem; font-weight: 700;">
+                                {% if record.light_intensity %}{{ record.light_intensity }}{% else %}<span class="text-muted">-</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded" style="background: linear-gradient(135deg, rgba(139,69,19,0.05), rgba(46,139,87,0.05));">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-info">💨 风速</span>
+                                <small class="text-muted">m/s</small>
+                            </div>
+                            <div class="font-monospace text-center" style="font-size: 1.5rem; font-weight: 700;">
+                                {% if record.wind_speed %}{{ record.wind_speed }}{% else %}<span class="text-muted">-</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row g-3 mt-2">
+                    <div class="col-6">
+                        <label class="form-label fw-semibold small text-muted">通风情况</label>
+                        <p class="mb-0">{{ record.ventilation_condition|default:"-" }}</p>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-semibold small text-muted">具体位置</label>
+                        <p class="mb-0">{{ record.position_info|default:"-" }}</p>
+                    </div>
+                </div>
+                
+                <div class="row g-3 mt-2">
+                    <div class="col-6">
+                        <label class="form-label fw-semibold small text-muted">记录人</label>
+                        <p class="mb-0">{{ record.recorder|default:"-" }}</p>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-semibold small text-muted">记录时间</label>
+                        <p class="mb-0">{{ record.record_time|date:"Y-m-d H:i:s" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        {% if record.is_abnormal %}
+        <div class="card border-danger mb-4">
+            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                <span>⚠️ 异常信息</span>
+                <span class="badge bg-white text-danger">{{ record.abnormal_details|length }}项异常</span>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    {% if record.abnormal_details and record.abnormal_details.items %}
+                        {% for key, value in record.abnormal_details.items %}
+                        <div class="alert alert-danger py-2 px-3 mb-2">
+                            <div class="d-flex align-items-center">
+                                <span class="me-2">•</span>
+                                <span>{{ value }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-muted">无详细异常信息</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="card border-warning">
+            <div class="card-header bg-warning bg-opacity-10 text-warning d-flex justify-content-between align-items-center">
+                <span>📝 处理意见</span>
+                {% if record.handling_opinion %}
+                <span class="badge bg-success">已处理</span>
+                {% else %}
+                <span class="badge bg-danger">待处理</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if record.handling_opinion %}
+                <p class="mb-0">{{ record.handling_opinion }}</p>
+                {% else %}
+                <p class="mb-0 text-muted">暂无处理意见</p>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="card border-success mb-4">
+            <div class="card-header bg-success text-white">
+                ✅ 晾晒区域条件正常
+            </div>
+            <div class="card-body">
+                <p class="mb-0 text-success">本次监测的晾晒区域条件均在标准范围内，无需特殊处理。</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if record.remark %}
+        <div class="card mt-4">
+            <div class="card-header">
+                📄 备注
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ record.remark }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-4 mt-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                📐 适用标准参考（{{ record.batch.herb_name }} - 晾晒阶段）
+            </div>
+            <div class="card-body">
+                {% if standards %}
+                <div class="row g-3">
+                    {% for std in standards %}
+                    <div class="col-md-6">
+                        <div class="p-3 rounded" style="background: linear-gradient(135deg, rgba(139,69,19,0.05), rgba(46,139,87,0.05));">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge {% if std.param_type == 'temperature' %}bg-danger{% else %}bg-primary{% endif %}">
+                                    {% if std.param_type == 'temperature' %}🌡️{% else %}💧{% endif %} {{ std.get_param_type_display }}
+                                </span>
+                                <span class="small text-muted">{{ std.get_stage_display }}</span>
+                            </div>
+                            <div class="font-monospace mb-1">
+                                标准范围：<strong>{{ std.min_value }} ~ {{ std.max_value }} {{ std.unit }}</strong>
+                            </div>
+                            {% if std.description %}
+                            <div class="small text-muted">{{ std.description }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-3 text-muted">
+                    <p class="mb-0">暂无适用的晾晒阶段标准</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>🔗 关联批次信息</span>
+                <a href="{% url 'herbapp:batch_detail' record.batch.pk %}" class="small">查看批次详情 →</a>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="stat-value" style="font-size: 1.2rem;">{{ record.batch.initial_weight }}g</div>
+                            <div class="stat-label">初始重量</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="stat-value" style="font-size: 1.2rem;">{{ record.batch.get_current_round_no }}/{{ record.batch.required_rounds }}</div>
+                            <div class="stat-label">炮制进度</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <span class="badge badge-status-{{ record.batch.status }}">{{ record.batch.get_status_display }}</span>
+                    {% if record.batch.template %}
+                    <span class="badge bg-info ms-2">📐 {{ record.batch.template.template_name }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

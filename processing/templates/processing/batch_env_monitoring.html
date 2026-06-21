@@ -1,0 +1,706 @@
+{% extends 'processing/base.html' %}
+
+{% block page_title %}批次环境监测{% endblock %}
+
+{% block page_content %}
+<div class="mb-4">
+    <h2 class="font-serif mb-2" style="color: var(--ochre);">📊 批次环境监测综合管理</h2>
+    <p class="text-muted">实时监控批次生产环境、设备状态和质量控制数据</p>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h4 class="font-serif mb-3" style="color: var(--ochre);">📦 批次基本信息</h4>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="mb-2">
+                            <small class="text-muted">批次编号</small>
+                            <div class="font-serif fs-5">{{ batch.batch_no }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-2">
+                            <small class="text-muted">药材名称</small>
+                            <div class="font-serif fs-5">{{ batch.herb_name }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-2">
+                            <small class="text-muted">当前状态</small>
+                            <div>
+                                <span class="badge badge-status-{{ batch.status }} fs-6">
+                                    {{ batch.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-2">
+                            <small class="text-muted">初始重量</small>
+                            <div class="font-serif">{{ batch.initial_weight }} g</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-2">
+                            <small class="text-muted">规定轮次</small>
+                            <div class="font-serif">{{ batch.required_rounds }} 轮</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-2">
+                            <small class="text-muted">已完成轮次</small>
+                            <div class="font-serif">{{ batch.get_current_round_no }} 轮</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="p-3" style="background: linear-gradient(135deg, rgba(178,34,34,0.05), rgba(184,134,11,0.05)); border-radius: 8px;">
+                    <div class="text-muted mb-1">异常总数</div>
+                    <div class="font-serif display-4" style="color: var(--vermilion);">{{ total_abnormal_count }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card h-100" style="border-left: 4px solid var(--vermilion);">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <span style="font-size: 2rem;">🌡️</span>
+            </div>
+            <div class="stat-value" style="color: var(--vermilion);">{{ env_abnormal_count }}</div>
+            <div class="stat-label">环境异常数</div>
+            <a href="#env-records-tab" class="btn btn-sm mt-3" style="background-color: rgba(178,34,34,0.1); color: var(--vermilion); border: 1px solid var(--vermilion);">
+                查看详情
+            </a>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card h-100" style="border-left: 4px solid var(--vermilion);">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <span style="font-size: 2rem;">⚙️</span>
+            </div>
+            <div class="stat-value" style="color: var(--vermilion);">{{ equipment_abnormal_count }}</div>
+            <div class="stat-label">设备异常数</div>
+            <a href="#equipment-records-tab" class="btn btn-sm mt-3" style="background-color: rgba(178,34,34,0.1); color: var(--vermilion); border: 1px solid var(--vermilion);">
+                查看详情
+            </a>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card h-100" style="border-left: 4px solid var(--vermilion);">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <span style="font-size: 2rem;">☀️</span>
+            </div>
+            <div class="stat-value" style="color: var(--vermilion);">{{ drying_abnormal_count }}</div>
+            <div class="stat-label">晾晒区异常数</div>
+            <a href="#drying-records-tab" class="btn btn-sm mt-3" style="background-color: rgba(178,34,34,0.1); color: var(--vermilion); border: 1px solid var(--vermilion);">
+                查看详情
+            </a>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card h-100" style="border-left: 4px solid var(--vermilion);">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <span style="font-size: 2rem;">📝</span>
+            </div>
+            <div class="stat-value" style="color: var(--vermilion);">{{ inspection_abnormal_count }}</div>
+            <div class="stat-label">巡检异常数</div>
+            <a href="#inspection-records-tab" class="btn btn-sm mt-3" style="background-color: rgba(178,34,34,0.1); color: var(--vermilion); border: 1px solid var(--vermilion);">
+                查看详情
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">📈 环境变化趋势图</h5>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-primary" onclick="loadChartData()">
+                🔄 刷新数据
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="chart-container" style="height: 350px;">
+            <canvas id="envChart"></canvas>
+        </div>
+        <div id="standardInfo" class="mt-3 p-3" style="background: rgba(46,139,87,0.05); border-radius: 8px; display: none;">
+            <h6 class="font-serif mb-2" style="color: var(--herb-green);">📋 环境参数标准</h6>
+            <div id="standardContent" class="row g-2"></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">🔧 设备使用统计</h5>
+            </div>
+            <div class="card-body">
+                <div id="equipmentStats" class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>设备编号</th>
+                                <th>设备名称</th>
+                                <th>使用次数</th>
+                                <th>异常次数</th>
+                            </tr>
+                        </thead>
+                        <tbody id="equipmentStatsBody">
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">加载中...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">📋 巡检统计</h5>
+            </div>
+            <div class="card-body">
+                <div id="inspectionStats" class="row g-3">
+                    <div class="col-6">
+                        <div class="text-center p-3" style="background: rgba(139,69,19,0.05); border-radius: 8px;">
+                            <div class="fs-2 font-serif" style="color: var(--ochre);" id="inspectionTotal">0</div>
+                            <div class="text-muted small">总巡检次数</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center p-3" style="background: rgba(46,139,87,0.05); border-radius: 8px;">
+                            <div class="fs-2 font-serif" style="color: var(--herb-green);" id="inspectionNormal">0</div>
+                            <div class="text-muted small">正常次数</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center p-3" style="background: rgba(178,34,34,0.05); border-radius: 8px;">
+                            <div class="fs-2 font-serif" style="color: var(--vermilion);" id="inspectionAbnormal">0</div>
+                            <div class="text-muted small">异常次数</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center p-3" style="background: rgba(108,117,125,0.05); border-radius: 8px;">
+                            <div class="fs-2 font-serif" style="color: #6c757d;" id="inspectionPending">0</div>
+                            <div class="text-muted small">待确认次数</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header p-0">
+        <ul class="nav nav-tabs card-header-tabs" id="recordsTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active font-serif" id="env-records-tab" data-bs-toggle="tab" data-bs-target="#env-records" type="button">
+                    🌡️ 环境监测记录
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link font-serif" id="equipment-records-tab" data-bs-toggle="tab" data-bs-target="#equipment-records" type="button">
+                    ⚙️ 设备状态记录
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link font-serif" id="drying-records-tab" data-bs-toggle="tab" data-bs-target="#drying-records" type="button">
+                    ☀️ 晾晒区域记录
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link font-serif" id="inspection-records-tab" data-bs-toggle="tab" data-bs-target="#inspection-records" type="button">
+                    📝 巡检记录
+                </button>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body">
+        <div class="tab-content" id="recordsTabContent">
+            <div class="tab-pane fade show active" id="env-records" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0 font-serif">环境监测记录列表</h6>
+                    <a href="{% url 'processing:batch_env_record_create' batch.pk %}" class="btn btn-primary btn-sm">
+                        ➕ 新增环境监测记录
+                    </a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>记录时间</th>
+                                <th>温度</th>
+                                <th>湿度</th>
+                                <th>监测位置</th>
+                                <th>记录人</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in env_records %}
+                            <tr {% if record.is_abnormal %}style="background-color: rgba(178,34,34,0.03);"{% endif %}>
+                                <td>{{ record.record_time|date:"Y-m-d H:i" }}</td>
+                                <td>{% if record.temperature %}{{ record.temperature }}°C{% else %}-{% endif %}</td>
+                                <td>{% if record.humidity %}{{ record.humidity }}%RH{% else %}-{% endif %}</td>
+                                <td>{{ record.location|default:"-" }}</td>
+                                <td>{{ record.recorder|default:"-" }}</td>
+                                <td>
+                                    {% if record.is_abnormal %}
+                                    <span class="badge badge-color-abnormal">异常</span>
+                                    {% else %}
+                                    <span class="badge badge-color-excellent">正常</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'processing:env_record_detail' record.pk %}" class="btn btn-sm btn-outline-primary">详情</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">暂无环境监测记录</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="equipment-records" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0 font-serif">设备状态记录列表</h6>
+                    <a href="{% url 'processing:batch_equipment_status_create' batch.pk %}" class="btn btn-success btn-sm">
+                        ➕ 新增设备状态记录
+                    </a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>记录时间</th>
+                                <th>设备编号</th>
+                                <th>设备名称</th>
+                                <th>运行状态</th>
+                                <th>操作人员</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in equipment_records %}
+                            <tr {% if record.is_abnormal %}style="background-color: rgba(178,34,34,0.03);"{% endif %}>
+                                <td>{{ record.record_time|date:"Y-m-d H:i" }}</td>
+                                <td class="font-serif">{{ record.equipment.equipment_no }}</td>
+                                <td>{{ record.equipment.equipment_name }}</td>
+                                <td>{{ record.get_running_status_display }}</td>
+                                <td>{{ record.operator|default:"-" }}</td>
+                                <td>
+                                    {% if record.is_abnormal %}
+                                    <span class="badge badge-color-abnormal">异常</span>
+                                    {% else %}
+                                    <span class="badge badge-color-excellent">正常</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'processing:equipment_status_detail' record.pk %}" class="btn btn-sm btn-outline-primary">详情</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">暂无设备状态记录</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="drying-records" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0 font-serif">晾晒区域记录列表</h6>
+                    <a href="{% url 'processing:batch_drying_record_create' batch.pk %}" class="btn btn-sm" style="background-color: var(--gold); border-color: var(--gold); color: #fff;">
+                        ➕ 新增晾晒区域记录
+                    </a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>记录时间</th>
+                                <th>区域名称</th>
+                                <th>区域类型</th>
+                                <th>温度</th>
+                                <th>湿度</th>
+                                <th>记录人</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in drying_records %}
+                            <tr {% if record.is_abnormal %}style="background-color: rgba(178,34,34,0.03);"{% endif %}>
+                                <td>{{ record.record_time|date:"Y-m-d H:i" }}</td>
+                                <td class="font-serif">{{ record.area_name }}</td>
+                                <td>{{ record.get_area_type_display }}</td>
+                                <td>{% if record.temperature %}{{ record.temperature }}°C{% else %}-{% endif %}</td>
+                                <td>{% if record.humidity %}{{ record.humidity }}%RH{% else %}-{% endif %}</td>
+                                <td>{{ record.recorder|default:"-" }}</td>
+                                <td>
+                                    {% if record.is_abnormal %}
+                                    <span class="badge badge-color-abnormal">异常</span>
+                                    {% else %}
+                                    <span class="badge badge-color-excellent">正常</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'processing:drying_record_detail' record.pk %}" class="btn btn-sm btn-outline-primary">详情</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">暂无晾晒区域记录</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="inspection-records" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0 font-serif">巡检记录列表</h6>
+                    <a href="{% url 'processing:inspection_create' %}" class="btn btn-outline-primary btn-sm">
+                        ➕ 新增巡检记录
+                    </a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>巡检时间</th>
+                                <th>巡检类型</th>
+                                <th>巡检人</th>
+                                <th>关联设备</th>
+                                <th>巡检结果</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in inspection_records %}
+                            <tr {% if record.inspection_result == 'abnormal' %}style="background-color: rgba(178,34,34,0.03);"{% endif %}>
+                                <td>{{ record.inspection_time|date:"Y-m-d H:i" }}</td>
+                                <td>{{ record.get_inspection_type_display }}</td>
+                                <td>{{ record.inspector }}</td>
+                                <td>
+                                    {% if record.equipment %}
+                                    <small class="font-serif">{{ record.equipment.equipment_no }}</small>
+                                    <br>
+                                    <small class="text-muted">{{ record.equipment.equipment_name }}</small>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if record.inspection_result == 'normal' %}
+                                    <span class="badge badge-color-excellent">正常</span>
+                                    {% elif record.inspection_result == 'abnormal' %}
+                                    <span class="badge badge-color-abnormal">异常</span>
+                                    {% else %}
+                                    <span class="badge badge-color-normal">待确认</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'processing:inspection_detail' record.pk %}" class="btn btn-sm btn-outline-primary">详情</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">暂无巡检记录</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let envChart = null;
+
+function loadChartData() {
+    fetch("{% url 'processing:batch_env_chart_api' batch.pk %}")
+        .then(response => response.json())
+        .then(data => {
+            renderChart(data.env_chart, data.standards);
+            renderEquipmentStats(data.equipment_stats);
+            renderInspectionStats(data.inspection_stats);
+            renderStandardInfo(data.standards);
+        })
+        .catch(error => console.error('加载数据失败:', error));
+}
+
+function renderChart(chartData, standards) {
+    const ctx = document.getElementById('envChart').getContext('2d');
+    
+    if (envChart) {
+        envChart.destroy();
+    }
+
+    const tempStandard = standards['temperature_both'] || standards['temperature_steam'] || null;
+    const humStandard = standards['humidity_both'] || standards['humidity_steam'] || null;
+
+    const datasets = [];
+
+    if (chartData.temperature.some(v => v !== null)) {
+        const tempDataset = {
+            label: '温度 (°C)',
+            data: chartData.temperature,
+            borderColor: '#B22222',
+            backgroundColor: 'rgba(178,34,34,0.1)',
+            yAxisID: 'y-temp',
+            tension: 0.3,
+            fill: true,
+            pointRadius: 4,
+            pointHoverRadius: 6
+        };
+        datasets.push(tempDataset);
+
+        if (tempStandard) {
+            datasets.push({
+                label: '温度上限',
+                data: Array(chartData.labels.length).fill(tempStandard.max),
+                borderColor: 'rgba(178,34,34,0.5)',
+                borderDash: [5, 5],
+                yAxisID: 'y-temp',
+                pointRadius: 0,
+                fill: false
+            });
+            datasets.push({
+                label: '温度下限',
+                data: Array(chartData.labels.length).fill(tempStandard.min),
+                borderColor: 'rgba(178,34,34,0.5)',
+                borderDash: [5, 5],
+                yAxisID: 'y-temp',
+                pointRadius: 0,
+                fill: false
+            });
+        }
+    }
+
+    if (chartData.humidity.some(v => v !== null)) {
+        const humDataset = {
+            label: '湿度 (%RH)',
+            data: chartData.humidity,
+            borderColor: '#2E8B57',
+            backgroundColor: 'rgba(46,139,87,0.1)',
+            yAxisID: 'y-hum',
+            tension: 0.3,
+            fill: true,
+            pointRadius: 4,
+            pointHoverRadius: 6
+        };
+        datasets.push(humDataset);
+
+        if (humStandard) {
+            datasets.push({
+                label: '湿度上限',
+                data: Array(chartData.labels.length).fill(humStandard.max),
+                borderColor: 'rgba(46,139,87,0.5)',
+                borderDash: [5, 5],
+                yAxisID: 'y-hum',
+                pointRadius: 0,
+                fill: false
+            });
+            datasets.push({
+                label: '湿度下限',
+                data: Array(chartData.labels.length).fill(humStandard.min),
+                borderColor: 'rgba(46,139,87,0.5)',
+                borderDash: [5, 5],
+                yAxisID: 'y-hum',
+                pointRadius: 0,
+                fill: false
+            });
+        }
+    }
+
+    const pointBackgroundColors = chartData.temperature.map(() => '#B22222');
+    chartData.abnormal_flags.forEach(flag => {
+        if (flag.index < pointBackgroundColors.length) {
+            pointBackgroundColors[flag.index] = '#ff0000';
+        }
+    });
+    if (datasets.length > 0) {
+        datasets[0].pointBackgroundColor = pointBackgroundColors;
+    }
+
+    envChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartData.labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        font: {
+                            family: "'Noto Serif SC', serif"
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        afterBody: function(context) {
+                            const index = context[0].dataIndex;
+                            const abnormal = chartData.abnormal_flags.find(f => f.index === index);
+                            if (abnormal) {
+                                const details = Object.values(abnormal.details).join('; ');
+                                return ['⚠️ ' + (details || '异常')];
+                            }
+                            return '';
+                        }
+                    }
+                }
+            },
+            scales: {
+                'y-temp': {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: '温度 (°C)',
+                        color: '#B22222',
+                        font: {
+                            family: "'Noto Serif SC', serif"
+                        }
+                    },
+                    ticks: {
+                        color: '#B22222'
+                    },
+                    grid: {
+                        drawOnChartArea: true
+                    }
+                },
+                'y-hum': {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: '湿度 (%RH)',
+                        color: '#2E8B57',
+                        font: {
+                            family: "'Noto Serif SC', serif"
+                        }
+                    },
+                    ticks: {
+                        color: '#2E8B57'
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                },
+                x: {
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 45,
+                        font: {
+                            size: 11
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderStandardInfo(standards) {
+    const container = document.getElementById('standardInfo');
+    const content = document.getElementById('standardContent');
+    
+    if (Object.keys(standards).length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+    content.innerHTML = '';
+
+    const displayed = new Set();
+    Object.entries(standards).forEach(([key, value]) => {
+        const type = key.split('_')[0];
+        if (!displayed.has(type)) {
+            displayed.add(type);
+            const div = document.createElement('div');
+            div.className = 'col-md-6';
+            div.innerHTML = `
+                <div class="p-2" style="background: #fff; border-radius: 6px;">
+                    <strong style="color: ${type === 'temperature' ? 'var(--vermilion)' : 'var(--herb-green)'}">${value.display}</strong>
+                    <span class="text-muted ms-2">
+                        ${value.min} ~ ${value.max} ${value.unit}
+                    </span>
+                </div>
+            `;
+            content.appendChild(div);
+        }
+    });
+}
+
+function renderEquipmentStats(stats) {
+    const tbody = document.getElementById('equipmentStatsBody');
+    
+    if (stats.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">暂无设备使用记录</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = stats.map(s => `
+        <tr>
+            <td class="font-serif">${s.equipment__equipment_no}</td>
+            <td>${s.equipment__equipment_name}</td>
+            <td>${s.total}</td>
+            <td>
+                ${s.abnormal > 0 
+                    ? `<span class="badge badge-color-abnormal">${s.abnormal}</span>` 
+                    : '<span class="badge badge-color-excellent">0</span>'}
+            </td>
+        </tr>
+    `).join('');
+}
+
+function renderInspectionStats(stats) {
+    document.getElementById('inspectionTotal').textContent = stats.total;
+    document.getElementById('inspectionNormal').textContent = stats.normal;
+    document.getElementById('inspectionAbnormal').textContent = stats.abnormal;
+    document.getElementById('inspectionPending').textContent = stats.pending;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadChartData();
+});
+</script>
+{% endblock %}

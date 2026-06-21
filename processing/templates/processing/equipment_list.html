@@ -1,0 +1,123 @@
+{% extends 'processing/base.html' %}
+
+{% block page_title %}设备列表{% endblock %}
+
+{% block page_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">🔧 设备管理</h2>
+    <a href="{% url 'processing:equipment_create' %}" class="btn btn-primary">
+        + 新增设备
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">关键词搜索</label>
+                <input type="text" name="q" class="form-control" placeholder="输入设备编号或名称" value="{{ q }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">设备类型</label>
+                <select name="equipment_type" class="form-select">
+                    <option value="">全部类型</option>
+                    {% for key, label in type_choices %}
+                    <option value="{{ key }}" {% if equipment_type == key %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">状态筛选</label>
+                <select name="status" class="form-select">
+                    <option value="">全部状态</option>
+                    {% for key, label in status_choices %}
+                    <option value="{{ key }}" {% if status == key %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100">🔍 搜索</button>
+            </div>
+            <div class="col-md-1">
+                <a href="{% url 'processing:equipment_list' %}" class="btn btn-secondary w-100">重置</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>设备编号</th>
+                        <th>设备名称</th>
+                        <th>类型</th>
+                        <th>规格型号</th>
+                        <th>存放位置</th>
+                        <th>状态</th>
+                        <th>上次维护</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for equipment in equipments %}
+                    <tr>
+                        <td class="font-serif"><strong>{{ equipment.equipment_no }}</strong></td>
+                        <td>{{ equipment.equipment_name }}</td>
+                        <td>{{ equipment.get_equipment_type_display }}</td>
+                        <td>{{ equipment.model|default:"-" }}</td>
+                        <td>{{ equipment.location|default:"-" }}</td>
+                        <td>
+                            {% if equipment.status == 'normal' %}
+                            <span class="badge bg-success">{{ equipment.get_status_display }}</span>
+                            {% elif equipment.status == 'maintenance' %}
+                            <span class="badge bg-warning text-dark">{{ equipment.get_status_display }}</span>
+                            {% elif equipment.status == 'fault' %}
+                            <span class="badge bg-danger">{{ equipment.get_status_display }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ equipment.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td><small>{{ equipment.last_maintenance_date|date:"Y-m-d"|default:"-" }}</small></td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'processing:equipment_detail' equipment.pk %}" class="btn btn-outline-primary">详情</a>
+                                <a href="{% url 'processing:equipment_update' equipment.pk %}" class="btn btn-outline-secondary">编辑</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <p style="font-size: 1.2rem;">暂无设备数据</p>
+                            <a href="{% url 'processing:equipment_create' %}" class="btn btn-primary mt-2">添加第一个设备</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if is_paginated %}
+    <div class="card-footer">
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?q={{ q }}&equipment_type={{ equipment_type }}&status={{ status }}&page={{ page_obj.previous_page_number }}">上一页</a></li>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                    <a class="page-link" href="?q={{ q }}&equipment_type={{ equipment_type }}&status={{ status }}&page={{ num }}">{{ num }}</a>
+                </li>
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?q={{ q }}&equipment_type={{ equipment_type }}&status={{ status }}&page={{ page_obj.next_page_number }}">下一页</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

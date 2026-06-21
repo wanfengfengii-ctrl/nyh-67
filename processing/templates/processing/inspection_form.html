@@ -1,0 +1,224 @@
+{% extends 'processing/base.html' %}
+
+{% block page_title %}{% if object %}编辑巡检记录{% else %}新增巡检记录{% endif %}{% endblock %}
+
+{% block page_content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="{% url 'processing:inspection_list' %}" class="btn btn-outline-secondary me-3">← 返回</a>
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">
+        📝 {% if object %}编辑巡检记录{% else %}新增巡检记录{% endif %}
+    </h2>
+    {% if batch %}
+    <span class="badge bg-info ms-3" style="font-size: 0.9rem;">
+        {{ batch.batch_no }} - {{ batch.herb_name }}
+    </span>
+    {% endif %}
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                巡检信息
+            </div>
+            <div class="card-body">
+                <form method="post" id="inspectionForm" novalidate>
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.inspection_type.label }} <span class="text-danger">*</span></label>
+                            {{ form.inspection_type }}
+                            {{ form.inspection_type.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.inspection_time.label }} <span class="text-danger">*</span></label>
+                            {{ form.inspection_time }}
+                            {{ form.inspection_time.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">关联批次</label>
+                            <select name="batch" class="form-select">
+                                <option value="">无关联批次</option>
+                                {% for b in batches %}
+                                <option value="{{ b.id }}" {% if object and object.batch_id == b.id %}selected{% elif batch and batch.id == b.id %}selected{% endif %}>{{ b.batch_no }} - {{ b.herb_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">巡检设备</label>
+                            <select name="equipment" class="form-select">
+                                <option value="">无巡检设备</option>
+                                {% for e in equipments %}
+                                <option value="{{ e.id }}" {% if object and object.equipment_id == e.id %}selected{% endif %}>{{ e.equipment_no }} - {{ e.equipment_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.inspector.label }} <span class="text-danger">*</span></label>
+                            {{ form.inspector }}
+                            {{ form.inspector.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.inspection_result.label }} <span class="text-danger">*</span></label>
+                            {{ form.inspection_result }}
+                            {{ form.inspection_result.errors }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">{{ form.inspection_items.label }}</label>
+                            <small class="text-muted d-block mb-2">每行输入一个巡检项目</small>
+                            {{ form.inspection_items }}
+                            {{ form.inspection_items.errors }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold" id="abnormalLabel">{{ form.abnormal_description.label }}</label>
+                            {{ form.abnormal_description }}
+                            <div id="abnormalHint" class="form-text d-none text-danger">
+                                巡检结果为异常时，必须填写异常说明
+                            </div>
+                            {{ form.abnormal_description.errors }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold" id="handlingLabel">{{ form.handling_result.label }}</label>
+                            {{ form.handling_result }}
+                            <div id="handlingHint" class="form-text d-none text-danger">
+                                巡检结果为异常时，必须填写处理结果
+                            </div>
+                            {{ form.handling_result.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.handling_person.label }}</label>
+                            {{ form.handling_person }}
+                            {{ form.handling_person.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.handling_time.label }}</label>
+                            {{ form.handling_time }}
+                            {{ form.handling_time.errors }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">{{ form.remark.label }}</label>
+                            {{ form.remark }}
+                            {{ form.remark.errors }}
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="{% url 'processing:inspection_list' %}" class="btn btn-secondary">取消</a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">保存记录</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        {% if equipment %}
+        <div class="card mb-4 border-info">
+            <div class="card-header bg-info bg-opacity-10 text-info">
+                🔧 巡检设备信息
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>{{ equipment.equipment_name }}</strong>
+                    <div class="text-muted small">{{ equipment.equipment_no }}</div>
+                </div>
+                <div class="row g-2 small">
+                    <div class="col-6">
+                        <span class="text-muted">设备类型：</span>
+                        <span>{{ equipment.get_equipment_type_display }}</span>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted">设备状态：</span>
+                        <span class="badge {% if equipment.status == 'normal' %}bg-success{% elif equipment.status == 'maintenance' %}bg-warning{% elif equipment.status == 'fault' %}bg-danger{% else %}bg-secondary{% endif %}">{{ equipment.get_status_display }}</span>
+                    </div>
+                    <div class="col-12">
+                        <span class="text-muted">存放位置：</span>
+                        <span>{{ equipment.location|default:"-" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="card">
+            <div class="card-header">
+                💡 操作提示
+            </div>
+            <div class="card-body">
+                <ul class="mb-0 small text-muted">
+                    <li class="mb-2">巡检类型、巡检时间、巡检人、巡检结果为必填项</li>
+                    <li class="mb-2">巡检项目每行输入一个，便于逐项检查</li>
+                    <li class="mb-2">巡检结果为"异常"时，必须填写异常说明和处理结果</li>
+                    <li class="mb-2">可选择关联批次和设备，便于追溯</li>
+                    <li>处理完成后填写处理人和处理时间</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    const form = document.getElementById('inspectionForm');
+    const resultSelect = document.getElementById('id_inspection_result');
+    const abnormalDesc = document.getElementById('id_abnormal_description');
+    const handlingResult = document.getElementById('id_handling_result');
+    const abnormalHint = document.getElementById('abnormalHint');
+    const handlingHint = document.getElementById('handlingHint');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    function updateAbnormalRequired() {
+        const isAbnormal = resultSelect.value === 'abnormal';
+        
+        if (isAbnormal) {
+            abnormalDesc.required = true;
+            handlingResult.required = true;
+            abnormalHint.classList.remove('d-none');
+            handlingHint.classList.remove('d-none');
+            document.getElementById('abnormalLabel').innerHTML = '{{ form.abnormal_description.label }} <span class="text-danger">*</span>';
+            document.getElementById('handlingLabel').innerHTML = '{{ form.handling_result.label }} <span class="text-danger">*</span>';
+        } else {
+            abnormalDesc.required = false;
+            handlingResult.required = false;
+            abnormalHint.classList.add('d-none');
+            handlingHint.classList.add('d-none');
+            document.getElementById('abnormalLabel').textContent = '{{ form.abnormal_description.label }}';
+            document.getElementById('handlingLabel').textContent = '{{ form.handling_result.label }}';
+        }
+    }
+    
+    resultSelect.addEventListener('change', updateAbnormalRequired);
+    
+    form.addEventListener('submit', function(e) {
+        const isAbnormal = resultSelect.value === 'abnormal';
+        
+        if (isAbnormal) {
+            if (!abnormalDesc.value.trim()) {
+                e.preventDefault();
+                alert('巡检结果为异常，请填写异常说明');
+                abnormalDesc.focus();
+                return;
+            }
+            if (!handlingResult.value.trim()) {
+                e.preventDefault();
+                alert('巡检结果为异常，请填写处理结果');
+                handlingResult.focus();
+                return;
+            }
+        }
+        
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>保存中...';
+    });
+    
+    const now = new Date();
+    const inspectionTimeInput = document.getElementById('id_inspection_time');
+    if (inspectionTimeInput && !inspectionTimeInput.value) {
+        inspectionTimeInput.value = now.toISOString().slice(0, 16);
+    }
+    
+    updateAbnormalRequired();
+})();
+</script>
+{% endblock %}

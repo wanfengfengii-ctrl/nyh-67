@@ -1,0 +1,255 @@
+{% extends 'processing/base.html' %}
+
+{% block page_title %}{{ record.get_inspection_type_display }} - 巡检记录详情{% endblock %}
+
+{% block page_content %}
+<div class="d-flex align-items-center mb-4 flex-wrap gap-2">
+    <a href="{% url 'processing:inspection_list' %}" class="btn btn-outline-secondary me-2">← 返回列表</a>
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">
+        🔍 巡检记录详情
+    </h2>
+    {% if record.inspection_result == 'normal' %}
+    <span class="badge badge-color-excellent ms-2" style="font-size: 0.9rem;">✓ 正常</span>
+    {% elif record.inspection_result == 'abnormal' %}
+    <span class="badge badge-color-abnormal ms-2" style="font-size: 0.9rem;">⚠️ 异常</span>
+    {% else %}
+    <span class="badge badge-color-normal ms-2" style="font-size: 0.9rem;">⏳ 待确认</span>
+    {% endif %}
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>📋 基本信息</span>
+                <small class="text-muted">{{ record.inspection_time|date:"Y-m-d H:i:s" }}</small>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="stat-value" style="font-size: 1.2rem;">{{ record.get_inspection_type_display }}</div>
+                            <div class="stat-label">巡检类型</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="stat-value" style="font-size: 1.2rem;">{{ record.inspector|default:"-" }}</div>
+                            <div class="stat-label">巡检人</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted">关联批次</label>
+                        {% if record.batch %}
+                        <p class="mb-0">
+                            <strong class="font-serif">{{ record.batch.batch_no }}</strong>
+                            <br><small class="text-muted">{{ record.batch.herb_name }}</small>
+                        </p>
+                        {% else %}
+                        <p class="mb-0 text-muted">-</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted">巡检设备</label>
+                        {% if record.equipment %}
+                        <p class="mb-0">
+                            <strong>{{ record.equipment.equipment_name }}</strong>
+                            <br><small class="text-muted">{{ record.equipment.equipment_no }}</small>
+                        </p>
+                        {% else %}
+                        <p class="mb-0 text-muted">-</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted">巡检时间</label>
+                        <p class="mb-0">{{ record.inspection_time|date:"Y-m-d H:i:s" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted">巡检结果</label>
+                        <p class="mb-0">
+                            {% if record.inspection_result == 'normal' %}
+                            <span class="badge badge-color-excellent">✓ 正常</span>
+                            {% elif record.inspection_result == 'abnormal' %}
+                            <span class="badge badge-color-abnormal">⚠️ 异常</span>
+                            {% else %}
+                            <span class="badge badge-color-normal">⏳ 待确认</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                
+                {% if record.inspection_items %}
+                <div class="mt-4">
+                    <label class="form-label fw-semibold">📋 巡检项目</label>
+                    <div class="card" style="background: linear-gradient(135deg, rgba(139,69,19,0.03), rgba(46,139,87,0.03));">
+                        <div class="card-body py-3">
+                            <ol class="mb-0">
+                                {% for item in record.inspection_items %}
+                                <li class="mb-2 {% if not forloop.last %}pb-2 border-bottom border-opacity-10 border-ochre{% endif %}">
+                                    {{ item }}
+                                </li>
+                                {% endfor %}
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if record.remark %}
+                <div class="mt-4">
+                    <label class="form-label fw-semibold small text-muted">备注</label>
+                    <p class="mb-0">{{ record.remark }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        {% if record.inspection_result == 'abnormal' %}
+        <div class="card border-danger mb-4">
+            <div class="card-header bg-danger text-white">
+                ⚠️ 异常说明
+            </div>
+            <div class="card-body">
+                {% if record.abnormal_description %}
+                <p class="mb-0">{{ record.abnormal_description }}</p>
+                {% else %}
+                <p class="mb-0 text-muted">无异常说明</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card border-warning">
+            <div class="card-header bg-warning bg-opacity-10 text-warning d-flex justify-content-between align-items-center">
+                <span>📝 处理结果</span>
+                {% if record.handling_result %}
+                <span class="badge bg-success">已处理</span>
+                {% else %}
+                <span class="badge bg-danger">待处理</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if record.handling_result %}
+                <p class="mb-3">{{ record.handling_result }}</p>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="form-label fw-semibold small text-muted">处理人</label>
+                        <p class="mb-0">{{ record.handling_person|default:"-" }}</p>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-semibold small text-muted">处理时间</label>
+                        <p class="mb-0">{{ record.handling_time|date:"Y-m-d H:i"|default:"-" }}</p>
+                    </div>
+                </div>
+                {% else %}
+                <p class="mb-0 text-muted">暂无处理结果</p>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="card border-success mb-4">
+            <div class="card-header bg-success text-white">
+                ✅ 巡检正常
+            </div>
+            <div class="card-body">
+                <p class="mb-0 text-success">本次巡检未发现异常，一切正常。</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if record.equipment %}
+        <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>🔧 巡检设备信息</span>
+                <a href="{% url 'processing:equipment_detail' record.equipment.pk %}" class="small">查看设备详情 →</a>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="stat-value" style="font-size: 1.2rem;">{{ record.equipment.equipment_no }}</div>
+                            <div class="stat-label">设备编号</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="stat-value" style="font-size: 1.2rem;">{{ record.equipment.equipment_name }}</div>
+                            <div class="stat-label">设备名称</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <span class="badge {% if record.equipment.status == 'normal' %}bg-success{% elif record.equipment.status == 'maintenance' %}bg-warning{% elif record.equipment.status == 'fault' %}bg-danger{% else %}bg-secondary{% endif %}">
+                        {{ record.equipment.get_status_display }}
+                    </span>
+                    <span class="badge bg-secondary ms-2">{{ record.equipment.get_equipment_type_display }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-4 mt-4">
+    {% if record.batch %}
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>🔗 关联批次信息</span>
+                <a href="{% url 'herbapp:batch_detail' record.batch.pk %}" class="small">查看批次详情 →</a>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="stat-value" style="font-size: 1.2rem;">{{ record.batch.initial_weight }}g</div>
+                            <div class="stat-label">初始重量</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="stat-value" style="font-size: 1.2rem;">{{ record.batch.get_current_round_no }}/{{ record.batch.required_rounds }}</div>
+                            <div class="stat-label">炮制进度</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <span class="badge badge-status-{{ record.batch.status }}">{{ record.batch.get_status_display }}</span>
+                    {% if record.batch.template %}
+                    <span class="badge bg-info ms-2">📐 {{ record.batch.template.template_name }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if record.images %}
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                📷 巡检图片
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    {% for img in record.images %}
+                    <div class="col-4">
+                        <img src="{{ img }}" class="img-fluid rounded" alt="巡检图片{{ forloop.counter }}">
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="mt-4 d-flex justify-content-end gap-2">
+    <a href="{% url 'processing:inspection_edit' record.pk %}" class="btn btn-primary">✏️ 编辑记录</a>
+    <a href="{% url 'processing:inspection_list' %}" class="btn btn-secondary">返回列表</a>
+</div>
+{% endblock %}

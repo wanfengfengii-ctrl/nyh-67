@@ -1,0 +1,169 @@
+{% extends 'processing/base.html' %}
+
+{% block page_title %}巡检记录{% endblock %}
+
+{% block page_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">🔍 巡检记录</h2>
+    <a href="{% url 'processing:inspection_create' %}" class="btn btn-primary">
+        + 新增记录
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">批次筛选</label>
+                <select name="batch" class="form-select">
+                    <option value="">全部批次</option>
+                    {% for b in batch_choices %}
+                    <option value="{{ b.id }}" {% if batch_id == b.id|stringformat:"i" %}selected{% endif %}>
+                        {{ b.batch_no }} - {{ b.herb_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">巡检设备</label>
+                <select name="equipment" class="form-select">
+                    <option value="">全部设备</option>
+                    {% for e in equipment_choices %}
+                    <option value="{{ e.id }}" {% if equipment_id == e.id|stringformat:"i" %}selected{% endif %}>
+                        {{ e.equipment_no }} - {{ e.equipment_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">巡检类型</label>
+                <select name="inspection_type" class="form-select">
+                    <option value="">全部类型</option>
+                    {% for key, value in inspection_type_choices %}
+                    <option value="{{ key }}" {% if inspection_type == key %}selected{% endif %}>
+                        {{ value }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">巡检结果</label>
+                <select name="result" class="form-select">
+                    <option value="">全部结果</option>
+                    {% for key, value in result_choices %}
+                    <option value="{{ key }}" {% if result == key %}selected{% endif %}>
+                        {{ value }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">关键词</label>
+                <input type="text" name="q" class="form-control" placeholder="输入巡检人、备注等关键词" value="{{ q }}">
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-outline-primary w-100">🔍</button>
+            </div>
+            <div class="col-md-12">
+                <a href="{% url 'processing:inspection_list' %}" class="btn btn-secondary">重置</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>巡检类型</th>
+                        <th>关联批次</th>
+                        <th>巡检设备</th>
+                        <th>巡检时间</th>
+                        <th>巡检人</th>
+                        <th>巡检项目</th>
+                        <th>巡检结果</th>
+                        <th>处理人</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr {% if record.inspection_result == 'abnormal' %}class="table-danger"{% endif %}>
+                        <td>
+                            <span class="badge bg-secondary">{{ record.get_inspection_type_display }}</span>
+                        </td>
+                        <td>
+                            {% if record.batch %}
+                            <span class="font-serif"><strong>{{ record.batch.batch_no }}</strong></span>
+                            <br><small class="text-muted">{{ record.batch.herb_name }}</small>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if record.equipment %}
+                            <strong>{{ record.equipment.equipment_name }}</strong>
+                            <br><small class="text-muted">{{ record.equipment.equipment_no }}</small>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td><small>{{ record.inspection_time|date:"Y-m-d H:i" }}</small></td>
+                        <td>{{ record.inspector|default:"-" }}</td>
+                        <td>
+                            {% if record.inspection_items %}
+                            <span class="badge bg-info">{{ record.inspection_items|length }}项</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if record.inspection_result == 'normal' %}
+                            <span class="badge badge-color-excellent">✓ 正常</span>
+                            {% elif record.inspection_result == 'abnormal' %}
+                            <span class="badge badge-color-abnormal">⚠️ 异常</span>
+                            {% else %}
+                            <span class="badge badge-color-normal">⏳ 待确认</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ record.handling_person|default:"-" }}</td>
+                        <td>
+                            <a href="{% url 'processing:inspection_detail' record.pk %}" class="btn btn-sm btn-outline-primary">详情</a>
+                            <a href="{% url 'processing:inspection_edit' record.pk %}" class="btn btn-sm btn-outline-secondary">编辑</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <p style="font-size: 1.2rem;">暂无巡检记录</p>
+                            <a href="{% url 'processing:inspection_create' %}" class="btn btn-primary mt-2">创建第一条记录</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if is_paginated %}
+    <div class="card-footer">
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?batch={{ batch }}&equipment={{ equipment }}&inspection_type={{ inspection_type }}&result={{ result }}&q={{ q }}&page={{ page_obj.previous_page_number }}">上一页</a></li>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                    <a class="page-link" href="?batch={{ batch }}&equipment={{ equipment }}&inspection_type={{ inspection_type }}&result={{ result }}&q={{ q }}&page={{ num }}">{{ num }}</a>
+                </li>
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?batch={{ batch }}&equipment={{ equipment }}&inspection_type={{ inspection_type }}&result={{ result }}&q={{ q }}&page={{ page_obj.next_page_number }}">下一页</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

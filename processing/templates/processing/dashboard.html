@@ -1,0 +1,225 @@
+{% extends 'processing/base.html' %}
+
+{% block page_title %}仪表盘{% endblock %}
+
+{% block page_content %}
+<div class="mb-4">
+    <h2 class="font-serif mb-2" style="color: var(--ochre);">📊 环境监测与设备管理仪表盘</h2>
+    <p class="text-muted">实时监控生产环境、设备状态和预警信息</p>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-3">
+        <div class="stat-card h-100" style="border-left: 4px solid var(--vermilion);">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <span style="font-size: 2rem;">⚠️</span>
+            </div>
+            <div class="stat-value">{{ pending_warnings_count }}</div>
+            <div class="stat-label">待处理预警</div>
+            <a href="{% url 'processing:warning_list' %}" class="btn btn-sm btn-outline-danger mt-3" style="border-color: var(--vermilion); color: var(--vermilion);">
+                查看详情
+            </a>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card h-100" style="border-left: 4px solid var(--herb-green);">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <span style="font-size: 2rem;">🌡️</span>
+            </div>
+            <div class="stat-value">{{ env_records_today }}</div>
+            <div class="stat-label">今日环境记录</div>
+            <a href="{% url 'processing:env_record_list' %}" class="btn btn-sm btn-outline-success mt-3" style="border-color: var(--herb-green); color: var(--herb-green);">
+                查看详情
+            </a>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card h-100" style="border-left: 4px solid var(--ochre);">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <span style="font-size: 2rem;">🔧</span>
+            </div>
+            <div class="stat-value">{{ equipment_count }}</div>
+            <div class="stat-label">正常设备数</div>
+            <a href="{% url 'processing:equipment_list' %}" class="btn btn-sm btn-outline-primary mt-3" style="border-color: var(--ochre); color: var(--ochre);">
+                查看详情
+            </a>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card h-100" style="border-left: 4px solid var(--gold);">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <span style="font-size: 2rem;">📝</span>
+            </div>
+            <div class="stat-value">{{ inspection_pending }}</div>
+            <div class="stat-label">待处理巡检</div>
+            <a href="{% url 'processing:inspection_list' %}?result=pending" class="btn btn-sm mt-3" style="border-color: var(--gold); color: var(--gold); border: 1px solid;">
+                查看详情
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">🌡️ 最近环境监测记录</h5>
+                <a href="{% url 'processing:env_record_list' %}" class="btn btn-sm btn-outline-primary">全部记录</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>批次</th>
+                                <th>记录时间</th>
+                                <th>温度</th>
+                                <th>湿度</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in recent_env_records %}
+                            <tr>
+                                <td>
+                                    <small class="font-serif">{{ record.batch.batch_no }}</small>
+                                    <br>
+                                    <small class="text-muted">{{ record.batch.herb_name }}</small>
+                                </td>
+                                <td>{{ record.record_time|date:"m-d H:i" }}</td>
+                                <td>{% if record.temperature %}{{ record.temperature }}°C{% else %}-{% endif %}</td>
+                                <td>{% if record.humidity %}{{ record.humidity }}%RH{% else %}-{% endif %}</td>
+                                <td>
+                                    {% if record.is_abnormal %}
+                                    <span class="badge badge-color-abnormal">异常</span>
+                                    {% else %}
+                                    <span class="badge badge-color-excellent">正常</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">暂无环境监测记录</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">⚙️ 最近设备状态记录</h5>
+                <a href="{% url 'processing:equipment_status_list' %}" class="btn btn-sm btn-outline-primary">全部记录</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>设备</th>
+                                <th>记录时间</th>
+                                <th>运行状态</th>
+                                <th>批次</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in recent_equipment_records %}
+                            <tr>
+                                <td>
+                                    <small class="font-serif">{{ record.equipment.equipment_no }}</small>
+                                    <br>
+                                    <small class="text-muted">{{ record.equipment.equipment_name }}</small>
+                                </td>
+                                <td>{{ record.record_time|date:"m-d H:i" }}</td>
+                                <td>{{ record.get_running_status_display }}</td>
+                                <td>
+                                    {% if record.batch %}
+                                    <small>{{ record.batch.batch_no }}</small>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if record.is_abnormal %}
+                                    <span class="badge badge-color-abnormal">异常</span>
+                                    {% else %}
+                                    <span class="badge badge-color-excellent">正常</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">暂无设备状态记录</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">📈 异常统计</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-center p-4" style="background: linear-gradient(135deg, rgba(178,34,34,0.1), rgba(178,34,34,0.05)); border-radius: 8px;">
+                            <div style="font-size: 2.5rem; font-weight: 700; color: var(--vermilion); font-family: 'Noto Serif SC', serif;">
+                                {{ abnormal_env_count }}
+                            </div>
+                            <div class="text-muted mt-2">环境异常数</div>
+                            <a href="{% url 'processing:env_record_list' %}?abnormal=1" class="btn btn-sm mt-3" style="background-color: rgba(178,34,34,0.1); color: var(--vermilion); border: 1px solid var(--vermilion);">
+                                查看
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center p-4" style="background: linear-gradient(135deg, rgba(178,34,34,0.1), rgba(178,34,34,0.05)); border-radius: 8px;">
+                            <div style="font-size: 2.5rem; font-weight: 700; color: var(--vermilion); font-family: 'Noto Serif SC', serif;">
+                                {{ abnormal_equipment_count }}
+                            </div>
+                            <div class="text-muted mt-2">设备异常数</div>
+                            <a href="{% url 'processing:equipment_status_list' %}?abnormal=1" class="btn btn-sm mt-3" style="background-color: rgba(178,34,34,0.1); color: var(--vermilion); border: 1px solid var(--vermilion);">
+                                查看
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">⚡ 快捷操作</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-3">
+                    <a href="{% url 'processing:env_record_create' %}" class="btn btn-primary">
+                        🌡️ 新增环境监测记录
+                    </a>
+                    <a href="{% url 'processing:equipment_status_create' %}" class="btn btn-success">
+                        ⚙️ 新增设备状态记录
+                    </a>
+                    <a href="{% url 'processing:drying_record_create' %}" class="btn" style="background-color: var(--gold); border-color: var(--gold); color: #fff;">
+                        ☀️ 新增晾晒区域记录
+                    </a>
+                    <a href="{% url 'processing:inspection_create' %}" class="btn btn-outline-primary">
+                        📝 新增巡检记录
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

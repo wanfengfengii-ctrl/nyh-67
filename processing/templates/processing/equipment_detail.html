@@ -1,0 +1,267 @@
+{% extends 'processing/base.html' %}
+
+{% block page_title %}{{ equipment.equipment_no }} - 设备详情{% endblock %}
+
+{% block page_content %}
+<div class="d-flex align-items-center mb-4 flex-wrap gap-2">
+    <a href="{% url 'processing:equipment_list' %}" class="btn btn-outline-secondary me-2">← 返回列表</a>
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">
+        🔧 {{ equipment.equipment_no }} - {{ equipment.equipment_name }}
+    </h2>
+    {% if equipment.status == 'normal' %}
+    <span class="badge bg-success ms-2" style="font-size: 0.9rem;">{{ equipment.get_status_display }}</span>
+    {% elif equipment.status == 'maintenance' %}
+    <span class="badge bg-warning text-dark ms-2" style="font-size: 0.9rem;">{{ equipment.get_status_display }}</span>
+    {% elif equipment.status == 'fault' %}
+    <span class="badge bg-danger ms-2" style="font-size: 0.9rem;">{{ equipment.get_status_display }}</span>
+    {% else %}
+    <span class="badge bg-secondary ms-2" style="font-size: 0.9rem;">{{ equipment.get_status_display }}</span>
+    {% endif %}
+    <a href="{% url 'processing:equipment_update' equipment.pk %}" class="btn btn-outline-primary ms-auto">
+        ✏️ 编辑设备
+    </a>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_records }}</div>
+            <div class="stat-label">使用记录</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_inspections }}</div>
+            <div class="stat-label">巡检次数</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" {% if abnormal_count > 0 %}style="border-color: var(--vermilion);"{% endif %}>
+            <div class="stat-value" {% if abnormal_count > 0 %}style="color: var(--vermilion);"{% endif %}>{{ abnormal_count }}</div>
+            <div class="stat-label">异常次数</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ equipment.last_maintenance_date|date:"m-d"|default:"-" }}</div>
+            <div class="stat-label">上次维护</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">📋 设备基本信息</div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tbody>
+                        <tr>
+                            <th style="width: 120px;">设备编号</th>
+                            <td class="font-serif"><strong>{{ equipment.equipment_no }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>设备名称</th>
+                            <td>{{ equipment.equipment_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>设备类型</th>
+                            <td>{{ equipment.get_equipment_type_display }}</td>
+                        </tr>
+                        <tr>
+                            <th>规格型号</th>
+                            <td>{{ equipment.model|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>生产厂家</th>
+                            <td>{{ equipment.manufacturer|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>购置日期</th>
+                            <td>{{ equipment.purchase_date|date:"Y-m-d"|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>存放位置</th>
+                            <td>{{ equipment.location|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>额定容量</th>
+                            <td>{{ equipment.capacity|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>上次维护</th>
+                            <td>{{ equipment.last_maintenance_date|date:"Y-m-d"|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <th>下次维护</th>
+                            <td>{{ equipment.next_maintenance_date|date:"Y-m-d"|default:"-" }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                {% if equipment.description %}
+                <div class="mt-3 p-3 bg-light rounded">
+                    <strong>设备说明：</strong>{{ equipment.description }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">📊 异常统计</div>
+            <div class="card-body">
+                {% if abnormal_stats %}
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="stat-card">
+                            <div class="stat-value" style="color: var(--vermilion);">{{ abnormal_stats.status_abnormal }}</div>
+                            <div class="stat-label">运行异常</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="stat-card">
+                            <div class="stat-value" style="color: var(--gold);">{{ abnormal_stats.inspection_abnormal }}</div>
+                            <div class="stat-label">巡检异常</div>
+                        </div>
+                    </div>
+                </div>
+                {% if recent_abnormals %}
+                <div class="mt-4">
+                    <h6 class="font-serif mb-3" style="color: var(--ochre);">最近异常记录</h6>
+                    {% for abnormal in recent_abnormals %}
+                    <div class="alert {% if abnormal.type == 'status' %}alert-danger{% else %}alert-warning{% endif %} py-2 px-3 mb-2">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <small class="text-muted">{{ abnormal.time|date:"Y-m-d H:i" }}</small>
+                                <div class="fw-semibold">{{ abnormal.title }}</div>
+                                {% if abnormal.description %}
+                                <div class="small mt-1">{{ abnormal.description }}</div>
+                                {% endif %}
+                            </div>
+                            {% if abnormal.url %}
+                            <a href="{{ abnormal.url }}" class="btn btn-sm btn-outline-{% if abnormal.type == 'status' %}danger{% else %}warning{% endif %}">查看</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <p>暂无异常记录</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>📜 使用记录</span>
+        <small class="text-muted">共 {{ status_records|length }} 条记录</small>
+    </div>
+    <div class="card-body p-0">
+        {% if status_records %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>记录时间</th>
+                        <th>所属批次</th>
+                        <th>关联轮次</th>
+                        <th>运行状态</th>
+                        <th>是否异常</th>
+                        <th>操作人员</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in status_records|slice:":10" %}
+                    <tr>
+                        <td><small>{{ record.record_time|date:"Y-m-d H:i" }}</small></td>
+                        <td>{{ record.batch.batch_no }}</td>
+                        <td>{% if record.round_no %}第{{ record.round_no }}轮{% else %}-{% endif %}</td>
+                        <td>{{ record.get_running_status_display }}</td>
+                        <td>
+                            {% if record.is_abnormal %}
+                            <span class="badge bg-danger">异常</span>
+                            {% else %}
+                            <span class="badge bg-success">正常</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ record.operator|default:"-" }}</td>
+                        <td>
+                            <a href="{% url 'processing:equipment_status_detail' record.pk %}" class="btn btn-sm btn-outline-primary">详情</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if status_records|length > 10 %}
+        <div class="text-center py-3 border-top">
+            <a href="{% url 'processing:equipment_status_list' %}?equipment={{ equipment.pk }}" class="btn btn-outline-primary btn-sm">
+                查看全部 {{ status_records|length }} 条记录 →
+            </a>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <p>暂无使用记录</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>🔍 巡检记录</span>
+        <small class="text-muted">共 {{ inspection_records|length }} 条记录</small>
+    </div>
+    <div class="card-body p-0">
+        {% if inspection_records %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>巡检时间</th>
+                        <th>巡检类型</th>
+                        <th>巡检人</th>
+                        <th>巡检结果</th>
+                        <th>关联批次</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in inspection_records|slice:":10" %}
+                    <tr>
+                        <td><small>{{ record.inspection_time|date:"Y-m-d H:i" }}</small></td>
+                        <td>{{ record.get_inspection_type_display }}</td>
+                        <td>{{ record.inspector }}</td>
+                        <td>
+                            {% if record.inspection_result == 'normal' %}
+                            <span class="badge bg-success">正常</span>
+                            {% elif record.inspection_result == 'abnormal' %}
+                            <span class="badge bg-danger">异常</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">待确认</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ record.batch.batch_no|default:"-" }}</td>
+                        <td>
+                            <a href="#" class="btn btn-sm btn-outline-primary">详情</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <p>暂无巡检记录</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

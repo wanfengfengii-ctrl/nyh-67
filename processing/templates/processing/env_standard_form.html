@@ -1,0 +1,102 @@
+{% extends 'processing/base.html' %}
+
+{% block page_title %}{% if object %}编辑{% else %}新增{% endif %}环境参数标准{% endblock %}
+
+{% block page_content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="{% url 'processing:env_standard_list' %}" class="btn btn-outline-secondary me-3">← 返回</a>
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">
+        📝 {% if object %}编辑{% else %}新增{% endif %}环境参数标准
+    </h2>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                标准参数信息
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.herb_name.label }} <span class="text-danger">*</span></label>
+                            {{ form.herb_name }}
+                            {{ form.herb_name.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.param_type.label }} <span class="text-danger">*</span></label>
+                            {{ form.param_type }}
+                            {{ form.param_type.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.stage.label }} <span class="text-danger">*</span></label>
+                            {{ form.stage }}
+                            {{ form.stage.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.unit.label }}</label>
+                            {{ form.unit }}
+                            <div class="form-text">温度默认°C，湿度默认%RH</div>
+                            {{ form.unit.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.min_value.label }} <span class="text-danger">*</span></label>
+                            {{ form.min_value }}
+                            {{ form.min_value.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.max_value.label }} <span class="text-danger">*</span></label>
+                            {{ form.max_value }}
+                            {{ form.max_value.errors }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">{{ form.description.label }}</label>
+                            {{ form.description }}
+                            {{ form.description.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mt-3">
+                                {{ form.is_active }}
+                                <label class="form-check-label fw-semibold" for="id_is_active">
+                                    {{ form.is_active.label }}
+                                </label>
+                            </div>
+                            {{ form.is_active.errors }}
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="{% url 'processing:env_standard_list' %}" class="btn btn-secondary">取消</a>
+                        <button type="submit" class="btn btn-primary">
+                            {% if object %}保存修改{% else %}创建标准{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    const paramTypeSelect = document.getElementById('id_param_type');
+    const unitInput = document.getElementById('id_unit');
+    
+    function updateUnit() {
+        if (!unitInput.value) {
+            if (paramTypeSelect.value === 'temperature') {
+                unitInput.placeholder = '°C';
+            } else if (paramTypeSelect.value === 'humidity') {
+                unitInput.placeholder = '%RH';
+            }
+        }
+    }
+    
+    paramTypeSelect.addEventListener('change', updateUnit);
+    updateUnit();
+})();
+</script>
+{% endblock %}

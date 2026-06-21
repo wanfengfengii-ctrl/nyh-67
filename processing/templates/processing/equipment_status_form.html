@@ -1,0 +1,126 @@
+{% extends 'processing/base.html' %}
+
+{% block page_title %}{% if record %}编辑设备状态记录{% else %}新增设备状态记录{% endif %}{% endblock %}
+
+{% block page_content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="{% url 'processing:equipment_status_list' %}" class="btn btn-outline-secondary me-3">← 返回</a>
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">
+        {% if record %}✏️ 编辑设备状态记录{% else %}➕ 新增设备状态记录{% endif %}
+    </h2>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        {% if not record %}
+        <div class="card mb-4">
+            <div class="card-header">
+                选择批次 <small class="text-muted ms-2">（按批次创建设备状态记录）</small>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">所属批次 <span class="text-danger">*</span></label>
+                    <select id="batchSelect" class="form-select">
+                        <option value="">请选择批次</option>
+                        {% for b in batch_choices %}
+                        <option value="{{ b.pk }}" {% if batch and batch.pk == b.pk %}selected{% endif %}>{{ b.batch_no }} - {{ b.herb_name }} ({{ b.get_status_display }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if batch %}
+                <div class="alert alert-info small mb-0 p-2">
+                    <strong>📋 当前批次：</strong>{{ batch.batch_no }} - {{ batch.herb_name }}
+                    <span class="ms-2">当前进度：{{ batch.get_current_round_no }}/{{ batch.required_rounds }}轮</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if batch or record %}
+        <div class="card">
+            <div class="card-header">
+                设备状态信息
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.equipment.label }} <span class="text-danger">*</span></label>
+                            {{ form.equipment }}
+                            {{ form.equipment.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.round_no.label }}</label>
+                            {{ form.round_no }}
+                            {{ form.round_no.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.record_time.label }}</label>
+                            {{ form.record_time }}
+                            {{ form.record_time.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.running_status.label }} <span class="text-danger">*</span></label>
+                            {{ form.running_status }}
+                            {{ form.running_status.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.operator.label }}</label>
+                            {{ form.operator }}
+                            {{ form.operator.errors }}
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">{{ form.operating_params.label }}</label>
+                            {{ form.operating_params }}
+                            {{ form.operating_params.errors }}
+                            <div class="form-text">JSON格式，如：{"pressure": "0.5MPa", "temperature": "120°C"}</div>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">{{ form.abnormal_description.label }}</label>
+                            {{ form.abnormal_description }}
+                            {{ form.abnormal_description.errors }}
+                            <div class="form-text">设备运行异常或故障时必须填写</div>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">{{ form.handling_result.label }}</label>
+                            {{ form.handling_result }}
+                            {{ form.handling_result.errors }}
+                            <div class="form-text">设备状态异常时必须填写</div>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">{{ form.remark.label }}</label>
+                            {{ form.remark }}
+                            {{ form.remark.errors }}
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="{% url 'processing:equipment_status_list' %}" class="btn btn-secondary">取消</a>
+                        <button type="submit" class="btn btn-primary">
+                            {% if record %}保存修改{% else %}创建记录{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    const batchSelect = document.getElementById('batchSelect');
+    if (batchSelect) {
+        batchSelect.addEventListener('change', function() {
+            const batchId = this.value;
+            if (batchId) {
+                window.location.href = '?batch=' + batchId;
+            }
+        });
+    }
+})();
+</script>
+{% endblock %}

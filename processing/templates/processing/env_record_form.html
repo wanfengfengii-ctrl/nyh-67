@@ -1,0 +1,262 @@
+{% extends 'processing/base.html' %}
+
+{% block page_title %}新增环境监测记录{% endblock %}
+
+{% block page_content %}
+<div class="d-flex align-items-center mb-4">
+    <a href="{% if batch %}{% url 'processing:batch_env_monitoring' batch.pk %}{% else %}{% url 'processing:env_record_list' %}{% endif %}" class="btn btn-outline-secondary me-3">← 返回</a>
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">
+        📝 新增环境监测记录
+    </h2>
+    {% if batch %}
+    <span class="badge bg-info ms-3" style="font-size: 0.9rem;">
+        {{ batch.batch_no }} - {{ batch.herb_name }}
+    </span>
+    {% endif %}
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                环境监测信息
+            </div>
+            <div class="card-body">
+                <form method="post" id="envRecordForm" novalidate>
+                    {% csrf_token %}
+                    {% if not batch %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">所属批次 <span class="text-danger">*</span></label>
+                        <select name="batch" class="form-select" required>
+                            <option value="">请选择批次</option>
+                            {% for b in batches %}
+                            <option value="{{ b.id }}">{{ b.batch_no }} - {{ b.herb_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.round_no.label }}</label>
+                            {{ form.round_no }}
+                            {{ form.round_no.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.record_time.label }}</label>
+                            {{ form.record_time }}
+                            {{ form.record_time.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.temperature.label }}</label>
+                            <div class="input-group">
+                                {{ form.temperature }}
+                                <span class="input-group-text">°C</span>
+                            </div>
+                            {{ form.temperature.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.humidity.label }}</label>
+                            <div class="input-group">
+                                {{ form.humidity }}
+                                <span class="input-group-text">%RH</span>
+                            </div>
+                            {{ form.humidity.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.location.label }}</label>
+                            {{ form.location }}
+                            {{ form.location.errors }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">{{ form.recorder.label }}</label>
+                            {{ form.recorder }}
+                            {{ form.recorder.errors }}
+                        </div>
+                        <div class="col-12">
+                            <div id="abnormalAlert" class="alert alert-warning d-none">
+                                <div class="d-flex align-items-center">
+                                    <span class="me-2">⚠️</span>
+                                    <div>
+                                        <strong>检测到环境参数异常：</strong>
+                                        <div id="abnormalDetails"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold" id="handlingLabel">{{ form.handling_opinion.label }}</label>
+                            {{ form.handling_opinion }}
+                            <div id="handlingHint" class="form-text d-none text-danger">
+                                检测到环境参数异常，必须填写处理意见
+                            </div>
+                            {{ form.handling_opinion.errors }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">{{ form.remark.label }}</label>
+                            {{ form.remark }}
+                            {{ form.remark.errors }}
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="{% if batch %}{% url 'processing:batch_env_monitoring' batch.pk %}{% else %}{% url 'processing:env_record_list' %}{% endif %}" class="btn btn-secondary">取消</a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">保存记录</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        {% if standards %}
+        <div class="card mb-4 border-info">
+            <div class="card-header bg-info bg-opacity-10 text-info">
+                📐 关联标准值（{{ batch.herb_name }}）
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    {% for std in standards %}
+                    <div class="col-12">
+                        <div class="p-3 rounded" style="background: linear-gradient(135deg, rgba(139,69,19,0.05), rgba(46,139,87,0.05));">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge {% if std.param_type == 'temperature' %}bg-danger{% else %}bg-primary{% endif %}">
+                                    {{ std.get_param_type_display }}
+                                </span>
+                                <span class="small text-muted">{{ std.get_stage_display }}</span>
+                            </div>
+                            <div class="font-monospace mb-1">
+                                标准范围：<strong>{{ std.min_value }} ~ {{ std.max_value }} {{ std.unit }}</strong>
+                            </div>
+                            {% if std.description %}
+                            <div class="small text-muted">{{ std.description }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="card">
+            <div class="card-header">
+                💡 操作提示
+            </div>
+            <div class="card-body">
+                <ul class="mb-0 small text-muted">
+                    <li class="mb-2">温度和湿度至少填写一项</li>
+                    <li class="mb-2">系统会自动根据标准值检测参数是否异常</li>
+                    <li class="mb-2">检测到异常时必须填写处理意见</li>
+                    <li>点击「检测异常」按钮可提前验证参数</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    const form = document.getElementById('envRecordForm');
+    const tempInput = document.getElementById('id_temperature');
+    const humInput = document.getElementById('id_humidity');
+    const batchSelect = document.querySelector('select[name="batch"]');
+    const handlingOpinion = document.getElementById('id_handling_opinion');
+    const handlingHint = document.getElementById('handlingHint');
+    const abnormalAlert = document.getElementById('abnormalAlert');
+    const abnormalDetails = document.getElementById('abnormalDetails');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    let currentAbnormal = false;
+    
+    function getBatchId() {
+        {% if batch %}
+        return {{ batch.pk }};
+        {% else %}
+        return batchSelect ? batchSelect.value : null;
+        {% endif %}
+    }
+    
+    function checkAbnormalities() {
+        const batchId = getBatchId();
+        if (!batchId) {
+            return;
+        }
+        
+        const temperature = tempInput.value;
+        const humidity = humInput.value;
+        
+        if (!temperature && !humidity) {
+            abnormalAlert.classList.add('d-none');
+            currentAbnormal = false;
+            updateHandlingRequired();
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('temperature', temperature);
+        formData.append('humidity', humidity);
+        
+        fetch("{% if batch %}{% url 'processing:env_check_api' batch.pk %}{% else %}/processing/batch/0/env-check/{% endif %}".replace('/0/', '/' + batchId + '/'), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                currentAbnormal = data.is_abnormal;
+                if (data.is_abnormal && data.abnormalities) {
+                    const msgs = Object.values(data.abnormalities);
+                    abnormalDetails.innerHTML = msgs.map(m => `<div class="mt-1">• ${m}</div>`).join('');
+                    abnormalAlert.classList.remove('d-none');
+                } else {
+                    abnormalAlert.classList.add('d-none');
+                }
+                updateHandlingRequired();
+            }
+        });
+    }
+    
+    function updateHandlingRequired() {
+        if (currentAbnormal) {
+            handlingOpinion.required = true;
+            handlingHint.classList.remove('d-none');
+            document.getElementById('handlingLabel').innerHTML = '处理意见 <span class="text-danger">*</span>';
+        } else {
+            handlingOpinion.required = false;
+            handlingHint.classList.add('d-none');
+            document.getElementById('handlingLabel').textContent = '处理意见';
+        }
+    }
+    
+    tempInput.addEventListener('blur', checkAbnormalities);
+    humInput.addEventListener('blur', checkAbnormalities);
+    tempInput.addEventListener('input', checkAbnormalities);
+    humInput.addEventListener('input', checkAbnormalities);
+    if (batchSelect) {
+        batchSelect.addEventListener('change', checkAbnormalities);
+    }
+    
+    form.addEventListener('submit', function(e) {
+        if (currentAbnormal && !handlingOpinion.value.trim()) {
+            e.preventDefault();
+            alert('检测到环境参数异常，请填写处理意见');
+            handlingOpinion.focus();
+            return;
+        }
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>保存中...';
+    });
+    
+    const now = new Date();
+    const recordTimeInput = document.getElementById('id_record_time');
+    if (recordTimeInput && !recordTimeInput.value) {
+        recordTimeInput.value = now.toISOString().slice(0, 16);
+    }
+})();
+</script>
+{% endblock %}

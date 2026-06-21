@@ -176,6 +176,24 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'herbapp:batch_compare' %}">批次对比</a>
                     </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            🌡️ 环境监测
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'processing:dashboard' %}">监测仪表盘</a></li>
+                            <li><a class="dropdown-item" href="{% url 'processing:warning_list' %}">预警中心</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'processing:env_standard_list' %}">环境参数标准</a></li>
+                            <li><a class="dropdown-item" href="{% url 'processing:env_record_list' %}">环境监测记录</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'processing:equipment_list' %}">设备管理</a></li>
+                            <li><a class="dropdown-item" href="{% url 'processing:equipment_status_list' %}">设备状态记录</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'processing:drying_record_list' %}">晾晒区域记录</a></li>
+                            <li><a class="dropdown-item" href="{% url 'processing:inspection_list' %}">巡检记录</a></li>
+                        </ul>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/admin/" target="_blank">后台管理</a>
                     </li>

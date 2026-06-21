@@ -17,6 +17,9 @@
         ⚠️ {{ pending_review_count }}个异常待复核
     </span>
     {% endif %}
+    <a href="{% url 'processing:batch_env_monitoring' batch.pk %}" class="btn btn-outline-info btn-sm ms-auto">
+        🌡️ 环境与设备监测
+    </a>
 </div>
 
 <div class="row mb-4">

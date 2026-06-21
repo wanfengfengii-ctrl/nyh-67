@@ -1,0 +1,245 @@
+{% extends 'processing/base.html' %}
+
+{% block page_title %}预警中心{% endblock %}
+
+{% block page_content %}
+<div class="mb-4">
+    <h2 class="font-serif mb-2" style="color: var(--ochre);">⚠️ 预警中心</h2>
+    <p class="text-muted">统一管理环境、设备、晾晒区和巡检异常预警信息</p>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="stat-card h-100" style="border-left: 4px solid var(--vermilion);">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <span style="font-size: 2.5rem;">🚨</span>
+            </div>
+            <div class="stat-value" style="color: var(--vermilion); font-size: 2.5rem;">{{ pending_count }}</div>
+            <div class="stat-label">待处理预警</div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="stat-card h-100" style="border-left: 4px solid var(--herb-green);">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <span style="font-size: 2.5rem;">✅</span>
+            </div>
+            <div class="stat-value" style="color: var(--herb-green); font-size: 2.5rem;">{{ handled_count }}</div>
+            <div class="stat-label">已处理预警</div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">📋 预警列表</h5>
+        <div class="d-flex gap-2">
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-primary active" onclick="filterWarnings('all')">全部</button>
+                <button type="button" class="btn btn-outline-primary" onclick="filterWarnings('pending')">待处理</button>
+                <button type="button" class="btn btn-outline-primary" onclick="filterWarnings('handled')">已处理</button>
+            </div>
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-secondary" onclick="filterByType('all')">全部类型</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="filterByType('env')">环境</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="filterByType('equipment')">设备</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="filterByType('drying')">晾晒</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="filterByType('inspection')">巡检</button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div id="warningsList">
+            {% for warning in warnings %}
+            <div class="warning-item p-3 border-bottom" 
+                 data-status="{% if warning.has_handling %}handled{% else %}pending{% endif %}"
+                 data-type="{{ warning.type }}">
+                <div class="row align-items-center">
+                    <div class="col-md-1 text-center">
+                        {% if warning.type == 'env' %}
+                        <span style="font-size: 2rem;">🌡️</span>
+                        {% elif warning.type == 'equipment' %}
+                        <span style="font-size: 2rem;">⚙️</span>
+                        {% elif warning.type == 'drying' %}
+                        <span style="font-size: 2rem;">☀️</span>
+                        {% else %}
+                        <span style="font-size: 2rem;">📝</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-7">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge 
+                                {% if warning.type == 'env' %}bg-danger{% endif %}
+                                {% if warning.type == 'equipment' %}bg-warning{% endif %}
+                                {% if warning.type == 'drying' %}bg-info{% endif %}
+                                {% if warning.type == 'inspection' %}bg-secondary{% endif %}
+                                text-white">
+                                {{ warning.type_display }}
+                            </span>
+                            {% if not warning.has_handling %}
+                            <span class="badge badge-color-abnormal">待处理</span>
+                            {% else %}
+                            <span class="badge badge-color-excellent">已处理</span>
+                            {% endif %}
+                            <small class="text-muted">
+                                {{ warning.time|date:"Y-m-d H:i:s" }}
+                            </small>
+                        </div>
+                        <div class="mb-1">
+                            {% if warning.batch %}
+                            <span class="font-serif text-dark">
+                                <strong>批次：</strong>{{ warning.batch.batch_no }}
+                                <small class="text-muted ms-2">{{ warning.batch.herb_name }}</small>
+                            </span>
+                            {% endif %}
+                            {% if warning.equipment %}
+                            <span class="ms-3">
+                                <strong>设备：</strong>
+                                <span class="font-serif">{{ warning.equipment.equipment_no }}</span>
+                                <small class="text-muted ms-1">{{ warning.equipment.equipment_name }}</small>
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="text-muted">
+                            <strong>异常描述：</strong>{{ warning.description }}
+                        </div>
+                        {% if warning.has_handling %}
+                        <div class="mt-2 p-2" style="background: rgba(46,139,87,0.05); border-radius: 6px;">
+                            <small class="text-success">
+                                <strong>处理结果：</strong>{{ warning.handling }}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="{{ warning.url }}" class="btn btn-outline-primary">
+                                🔍 查看详情
+                            </a>
+                            {% if not warning.has_handling %}
+                            <button type="button" class="btn btn-success" onclick="markAsHandled('{{ warning.url }}')">
+                                ✓ 标记已处理
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-5">
+                <span style="font-size: 3rem;">🎉</span>
+                <p class="text-muted mt-3">暂无预警信息，一切正常！</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% if is_paginated %}
+<nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page=1">首页</a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">上一页</a>
+        </li>
+        {% endif %}
+        
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active">
+                <span class="page-link" style="background-color: var(--ochre); border-color: var(--ochre);">{{ num }}</span>
+            </li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+            </li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">下一页</a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">末页</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.warning-item {
+    transition: all 0.3s ease;
+}
+.warning-item:hover {
+    background-color: rgba(139,69,19,0.03);
+}
+.warning-item[data-status="pending"] {
+    border-left: 4px solid var(--vermilion) !important;
+    background-color: rgba(178,34,34,0.02);
+}
+.warning-item.hidden {
+    display: none;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentStatusFilter = 'all';
+let currentTypeFilter = 'all';
+
+function applyFilters() {
+    const items = document.querySelectorAll('.warning-item');
+    items.forEach(item => {
+        const status = item.dataset.status;
+        const type = item.dataset.type;
+        
+        const statusMatch = currentStatusFilter === 'all' || status === currentStatusFilter;
+        const typeMatch = currentTypeFilter === 'all' || type === currentTypeFilter;
+        
+        if (statusMatch && typeMatch) {
+            item.classList.remove('hidden');
+        } else {
+            item.classList.add('hidden');
+        }
+    });
+}
+
+function filterWarnings(status) {
+    currentStatusFilter = status;
+    document.querySelectorAll('.btn-group:first-of-type .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    applyFilters();
+}
+
+function filterByType(type) {
+    currentTypeFilter = type;
+    document.querySelectorAll('.btn-group:last-of-type .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    applyFilters();
+}
+
+function markAsHandled(url) {
+    if (confirm('确定要将此预警标记为已处理吗？')) {
+        window.location.href = url;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const pendingItems = document.querySelectorAll('.warning-item[data-status="pending"]');
+    pendingItems.forEach((item, index) => {
+        item.style.animation = `pulse 2s ease-in-out ${index * 0.2}s infinite`;
+    });
+});
+</script>
+{% endblock %}
