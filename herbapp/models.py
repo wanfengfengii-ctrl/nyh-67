@@ -32,6 +32,12 @@ class HerbBatch(models.Model):
     def __str__(self):
         return f'{self.batch_no} - {self.herb_name}'
 
+    def clean(self):
+        if self.initial_weight is not None and self.initial_weight <= 0:
+            raise ValidationError({'initial_weight': '初始重量必须大于0'})
+        if self.required_rounds is not None and self.required_rounds < 1:
+            raise ValidationError({'required_rounds': '规定轮次必须大于等于1'})
+
     def get_current_round_no(self):
         return self.rounds.count()
 
@@ -100,8 +106,11 @@ class ProcessingRound(models.Model):
             raise ValidationError({'steam_time': '蒸制时间必须大于0'})
         if self.dry_duration is not None and self.dry_duration <= 0:
             raise ValidationError({'dry_duration': '晾晒时长必须大于0'})
-        if self.weight is not None and self.batch_id and self.weight > self.batch.initial_weight:
-            raise ValidationError({'weight': '当前重量不能大于初始重量'})
+        if self.weight is not None:
+            if self.weight <= 0:
+                raise ValidationError({'weight': '当前重量必须大于0'})
+            if self.batch_id and self.weight > self.batch.initial_weight:
+                raise ValidationError({'weight': '当前重量不能大于初始重量'})
         if self.color_rating == self.COLOR_ABNORMAL and not self.handling_opinion:
             raise ValidationError({'handling_opinion': '色泽评级异常时必须填写处理意见'})
 

@@ -16,6 +16,18 @@ class HerbBatchForm(forms.ModelForm):
             'remark': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
+    def clean_initial_weight(self):
+        initial_weight = self.cleaned_data.get('initial_weight')
+        if initial_weight is not None and initial_weight <= 0:
+            raise forms.ValidationError('初始重量必须大于0')
+        return initial_weight
+
+    def clean_required_rounds(self):
+        required_rounds = self.cleaned_data.get('required_rounds')
+        if required_rounds is not None and required_rounds < 1:
+            raise forms.ValidationError('规定轮次必须大于等于1')
+        return required_rounds
+
 
 class ProcessingRoundForm(forms.ModelForm):
     class Meta:
@@ -24,7 +36,7 @@ class ProcessingRoundForm(forms.ModelForm):
         widgets = {
             'steam_time': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'min': '0.1'}),
             'dry_duration': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'min': '0.1'}),
-            'weight': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'weight': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
             'color_rating': forms.Select(attrs={'class': 'form-select'}),
             'handling_opinion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
@@ -49,8 +61,11 @@ class ProcessingRoundForm(forms.ModelForm):
         if dry_duration is not None and dry_duration <= 0:
             self.add_error('dry_duration', '晾晒时长必须大于0')
 
-        if weight is not None and self.batch and weight > self.batch.initial_weight:
-            self.add_error('weight', '当前重量不能大于初始重量')
+        if weight is not None:
+            if weight <= 0:
+                self.add_error('weight', '当前重量必须大于0')
+            elif self.batch and weight > self.batch.initial_weight:
+                self.add_error('weight', '当前重量不能大于初始重量')
 
         if color_rating == ProcessingRound.COLOR_ABNORMAL and not handling_opinion:
             self.add_error('handling_opinion', '色泽评级异常时必须填写处理意见')
