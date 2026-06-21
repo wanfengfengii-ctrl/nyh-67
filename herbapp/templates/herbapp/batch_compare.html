@@ -21,7 +21,7 @@
                 {% for choice in form.batches.field.choices %}
                 {% if choice.0 %}
                 <div class="col-md-4 col-lg-3 mb-2">
-                    <div class="form-check border rounded p-2 h-100 {% if choice.0 in form.batches.value or choice.0 in request.POST.getlist 'batches' %}bg-light{% endif %}">
+                    <div class="form-check border rounded p-2 h-100">
                         <input class="form-check-input me-1" type="checkbox" name="batches" value="{{ choice.0 }}" id="batch_{{ choice.0 }}">
                         <label class="form-check-label small fw-semibold" for="batch_{{ choice.0 }}">
                             {{ choice.1 }}

@@ -28,6 +28,11 @@ class ProcessingStandardTemplateForm(forms.ModelForm):
 
 
 class RoundStandardForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name in self.fields:
+            self.fields[field_name].required = False
+
     class Meta:
         model = RoundStandard
         fields = ['round_no', 'steam_time_min', 'steam_time_max', 'dry_duration_min',
@@ -42,11 +47,21 @@ class RoundStandardForm(forms.ModelForm):
             'required_color': forms.Select(attrs={'class': 'form-select'}),
         }
 
+    def clean(self):
+        cleaned_data = super().clean()
+        round_no = cleaned_data.get('round_no')
+        if round_no is None or round_no == '':
+            return cleaned_data
+        required_fields = ['steam_time_min', 'steam_time_max', 'dry_duration_min',
+                           'dry_duration_max', 'weight_loss_max']
+        for field_name in required_fields:
+            if cleaned_data.get(field_name) is None:
+                self.add_error(field_name, '此字段为必填项')
+        return cleaned_data
+
 
 class BaseRoundStandardFormSet(BaseFormSet):
     def clean(self):
-        if any(self.errors):
-            return
         round_nos = set()
         for form in self.forms:
             if not form.cleaned_data:
@@ -54,9 +69,22 @@ class BaseRoundStandardFormSet(BaseFormSet):
             if form.cleaned_data.get('DELETE'):
                 continue
             round_no = form.cleaned_data.get('round_no')
+            if round_no is None or round_no == '':
+                continue
+            if form.errors:
+                continue
             if round_no in round_nos:
                 raise ValidationError(f'轮次序号{round_no}重复，请检查')
             round_nos.add(round_no)
+
+        if round_nos:
+            expected = set(range(1, max(round_nos) + 1))
+            missing = expected - round_nos
+            if missing:
+                sorted_missing = sorted(missing)
+                raise ValidationError(
+                    f'轮次必须从第1轮开始连续填写，缺少第{sorted_missing[0]}轮'
+                )
 
 
 RoundStandardFormSet = formset_factory(
@@ -155,6 +183,19 @@ class ProcessingRoundForm(forms.ModelForm):
                 self.add_error('weight', '当前重量必须大于0')
             elif self.batch and weight > self.batch.initial_weight:
                 self.add_error('weight', '当前重量不能大于初始重量')
+
+        if self.batch and steam_time and dry_duration and weight and color_rating:
+            temp_round = ProcessingRound(
+                batch=self.batch,
+                round_no=self.batch.get_next_round_no(),
+                steam_time=steam_time,
+                dry_duration=dry_duration,
+                weight=weight,
+                color_rating=color_rating,
+            )
+            is_abnormal, reasons = temp_round.detect_abnormalities()
+            if is_abnormal and not handling_opinion:
+                self.add_error('handling_opinion', '检测到数据异常，必须填写处理意见')
 
         return cleaned_data
 
