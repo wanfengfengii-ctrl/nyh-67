@@ -177,6 +177,18 @@
                         <a class="nav-link" href="{% url 'herbapp:batch_compare' %}">批次对比</a>
                     </li>
                     <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" style="color: #fff0c8 !important; font-weight: 600;">
+                            🔗 追溯预警中心
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'traceability:dashboard' %}">📊 追溯仪表盘</a></li>
+                            <li><a class="dropdown-item" href="{% url 'traceability:warning_center' %}">🔔 集中预警中心</a></li>
+                            <li><a class="dropdown-item" href="{% url 'traceability:compare' %}">📈 批次追溯对比</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{% url 'traceability:warning_center' %}?status=pending">⏳ 待处理异常清单</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             🌡️ 环境监测
                         </a>

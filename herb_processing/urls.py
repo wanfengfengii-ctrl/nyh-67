@@ -21,4 +21,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('herbapp.urls')),
     path('processing/', include('processing.urls')),
+    path('traceability/', include('traceability.urls')),
 ]

@@ -1,0 +1,301 @@
+{% extends 'herbapp/base.html' %}
+{% load static %}
+
+{% block title %}批次追溯与质量预警中心 - 传统药材炮制管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h2 class="font-serif mb-0" style="color: var(--ochre);">🔗 批次追溯与质量预警中心</h2>
+    <div class="d-flex gap-2">
+        <a href="{% url 'traceability:warning_center' %}" class="btn btn-danger btn-sm">
+            🔔 预警中心
+            {% if untreated_count %}<span class="badge bg-white text-danger ms-1">{{ untreated_count }}</span>{% endif %}
+        </a>
+        <a href="{% url 'traceability:compare' %}" class="btn btn-outline-primary btn-sm">📊 批次追溯对比</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-2 col-6">
+        <div class="stat-card border h-100">
+            <div class="stat-value">{{ total_batches }}</div>
+            <div class="stat-label">总批次数量</div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6">
+        <div class="stat-card border border-primary h-100">
+            <div class="stat-value" style="color: var(--herb-green);">{{ processing_batches }}</div>
+            <div class="stat-label">炮制中批次</div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6">
+        <div class="stat-card border border-success h-100">
+            <div class="stat-value" style="color: #0d6efd;">{{ completed_batches }}</div>
+            <div class="stat-label">已完成/验收</div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6">
+        <div class="stat-card border border-warning h-100">
+            <div class="stat-value" style="color: var(--gold);">{{ all_abnormal_count }}</div>
+            <div class="stat-label">累计异常次数</div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6">
+        <div class="stat-card border border-danger h-100">
+            <div class="stat-value" style="color: var(--vermilion);">{{ untreated_count }}</div>
+            <div class="stat-label">未处理异常</div>
+        </div>
+    </div>
+    <div class="col-md-2 col-6">
+        <div class="stat-card border border-danger border-2 h-100">
+            <div class="stat-value" style="color: var(--vermilion);">{{ critical_count }}</div>
+            <div class="stat-label">严重/紧急预警</div>
+        </div>
+    </div>
+</div>
+
+{% if quality_overview %}
+<div class="card mb-4">
+    <div class="card-header">🏆 整体质量概览（共{{ quality_overview.total_assessed }}个批次已评估）</div>
+    <div class="card-body">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-value">{{ quality_overview.avg_score }}</div>
+                    <div class="stat-label">平均评分</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card border border-success">
+                    <div class="stat-value" style="color: var(--herb-green);">{{ quality_overview.max_score }}</div>
+                    <div class="stat-label">最高分</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card border border-danger">
+                    <div class="stat-value" style="color: var(--vermilion);">{{ quality_overview.min_score }}</div>
+                    <div class="stat-label">最低分</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="chart-container" style="height: 140px;">
+                    <canvas id="gradeChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="row g-2 mt-3">
+            <div class="col-md-3">
+                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background: rgba(46,139,87,0.1);">
+                    <span class="badge bg-success fs-6">优秀</span>
+                    <span class="fw-bold">{{ quality_overview.excellent }}批</span>
+                    <small class="text-muted ms-auto">≥90分</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background: rgba(70,130,180,0.1);">
+                    <span class="badge bg-primary fs-6">良好</span>
+                    <span class="fw-bold">{{ quality_overview.good }}批</span>
+                    <small class="text-muted ms-auto">75-89分</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background: rgba(184,134,11,0.1);">
+                    <span class="badge bg-warning text-dark fs-6">合格</span>
+                    <span class="fw-bold">{{ quality_overview.normal }}批</span>
+                    <small class="text-muted ms-auto">60-74分</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background: rgba(178,34,34,0.1);">
+                    <span class="badge bg-danger fs-6">不合格</span>
+                    <span class="fw-bold">{{ quality_overview.poor }}批</span>
+                    <small class="text-muted ms-auto">&lt;60分</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>📋 未处理异常分类统计</span>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 220px;">
+                    <canvas id="warningTypeChart"></canvas>
+                </div>
+                <div class="row g-2 mt-3 small">
+                    <div class="col-6">
+                        <div class="d-flex justify-content-between p-2 rounded" style="background: #fef2f2;">
+                            <span>🔴 炮制待复核</span>
+                            <strong class="text-danger">{{ warning_summary.round_pending }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex justify-content-between p-2 rounded" style="background: #eff6ff;">
+                            <span>🔵 环境未处理</span>
+                            <strong class="text-primary">{{ warning_summary.env_untreated }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex justify-content-between p-2 rounded" style="background: #f5f5f5;">
+                            <span>⚫ 设备未处理</span>
+                            <strong class="text-dark">{{ warning_summary.equip_untreated }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex justify-content-between p-2 rounded" style="background: #fffbeb;">
+                            <span>🟡 晾晒区未处理</span>
+                            <strong class="text-warning">{{ warning_summary.drying_untreated }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex justify-content-between p-2 rounded" style="background: #ecfdf5;">
+                            <span>🟢 巡检问题</span>
+                            <strong class="text-success">{{ warning_summary.inspection_issue }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex justify-content-between p-2 rounded border border-danger">
+                            <span>🚨 设备故障</span>
+                            <strong class="text-danger">{{ warning_summary.equip_fault }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>🚨 紧急预警提示</span>
+                <a href="{% url 'traceability:warning_center' %}" class="btn btn-sm btn-outline-danger">查看全部→</a>
+            </div>
+            <div class="card-body">
+                {% if critical_alerts %}
+                <div class="list-group list-group-flush">
+                    {% for alert in critical_alerts %}
+                    <a href="{{ alert.url }}" class="list-group-item list-group-item-action d-flex gap-3 py-2 border-start border-4 {% if alert.level == 'critical' %}border-danger{% elif alert.level == 'high' %}border-warning{% else %}border-info{% endif %}" style="border-radius: 0 4px 4px 0;">
+                        <div class="flex-shrink-0">
+                            {% if alert.level == 'critical' %}<span class="badge bg-danger">紧急</span>
+                            {% elif alert.level == 'high' %}<span class="badge bg-warning text-dark">高</span>
+                            {% else %}<span class="badge bg-info">提示</span>{% endif %}
+                        </div>
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="d-flex w-100 justify-content-between">
+                                <small class="fw-bold {% if alert.level == 'critical' %}text-danger{% endif %}">{{ alert.type }}</small>
+                                <small class="text-muted">{{ alert.time|date:"m-d H:i" }}</small>
+                            </div>
+                            <p class="mb-0 small text-truncate">{{ alert.description }}</p>
+                            {% if alert.batch %}
+                            <small class="text-muted">📦 {{ alert.batch.batch_no }}｜{{ alert.batch.herb_name }}</small>
+                            {% endif %}
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <div style="font-size: 3rem;">✅</div>
+                    <p class="mt-2">暂无紧急预警，系统运行正常</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>📦 最近批次（快速进入追溯）</span>
+        <a href="{% url 'herbapp:batch_list' %}" class="btn btn-sm btn-outline-primary">全部批次→</a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 small">
+                <thead>
+                    <tr>
+                        <th>批次编号</th>
+                        <th>药材名称</th>
+                        <th>创建时间</th>
+                        <th>状态</th>
+                        <th>轮次进度</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for batch in recent_batches %}
+                    <tr>
+                        <td><strong>{{ batch.batch_no }}</strong></td>
+                        <td>{{ batch.herb_name }}</td>
+                        <td class="text-muted">{{ batch.created_at|date:"Y-m-d H:i" }}</td>
+                        <td>
+                            <span class="badge badge-status-{{ batch.status }}">
+                                {{ batch.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="progress" style="height: 16px;">
+                                <div class="progress-bar bg-success" role="progressbar"
+                                     style="width: {% widthratio batch.get_current_round_no batch.required_rounds 100 %}%">
+                                    {{ batch.get_current_round_no }}/{{ batch.required_rounds }}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <a href="{% url 'traceability:batch_trace' batch.pk %}" class="btn btn-sm btn-outline-primary">🔗 追溯</a>
+                            <a href="{% url 'herbapp:batch_detail' batch.pk %}" class="btn btn-sm btn-outline-secondary">详情</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+    {% if quality_overview %}
+    new Chart(document.getElementById('gradeChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['优秀', '良好', '合格', '不合格'],
+            datasets: [{
+                data: [{{ quality_overview.excellent }}, {{ quality_overview.good }}, {{ quality_overview.normal }}, {{ quality_overview.poor }}],
+                backgroundColor: ['#2E8B57', '#4682B4', '#B8860B', '#B22222'],
+                borderWidth: 0,
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 11 } } } },
+        }
+    });
+    {% endif %}
+
+    new Chart(document.getElementById('warningTypeChart'), {
+        type: 'pie',
+        data: {
+            labels: ['炮制待复核', '环境未处理', '设备未处理', '晾晒区未处理', '巡检问题', '设备故障'],
+            datasets: [{
+                data: [{{ warning_summary.round_pending }}, {{ warning_summary.env_untreated }}, {{ warning_summary.equip_untreated }}, {{ warning_summary.drying_untreated }}, {{ warning_summary.inspection_issue }}, {{ warning_summary.equip_fault }}],
+                backgroundColor: ['#B22222', '#4682B4', '#696969', '#DAA520', '#2E8B57', '#8B0000'],
+                borderWidth: 1, borderColor: '#fff',
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } },
+        }
+    });
+})();
+</script>
+{% endblock %}
